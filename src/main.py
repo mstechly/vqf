@@ -1,9 +1,11 @@
 from preprocessing import create_problem_representation
 import pdb
+import pyquil.api as api
 from grove.pyqaoa.qaoa import QAOA
 from pyquil.paulis import PauliTerm, PauliSum
 import pyquil.quil as pq
 from pyquil.gates import X, I
+import scipy.optimize
 
 
 def factor_number(m):
@@ -11,6 +13,32 @@ def factor_number(m):
     cost_operators, mapping = create_operators_from_clauses(clauses)
     driver_operators = create_driver_operators(mapping)
 
+    minimizer_kwargs = {'method': 'Nelder-Mead',
+                            'options': {'ftol': 1e-4, 'xtol': 1e-4,
+                                        'disp': False}}
+
+    vqe_option = {'disp': print, 'return_all': True,
+                  'samples': None}
+
+    qubits=list(range(len(mapping)));
+
+    qvm = api.QVMConnection()
+    qaoa_inst = QAOA(qvm, 
+                      qubits, 
+                      steps=3, 
+                      init_betas=None, 
+                      init_gammas=None,
+                      cost_ham=cost_operators,
+                      ref_ham=driver_operators, 
+                      minimizer=scipy.optimize.minimize,
+                      minimizer_kwargs=minimizer_kwargs,
+                      rand_seed=None,
+                      vqe_options=vqe_option, 
+                      store_basis=True)
+
+    betas, gammas = qaoa_inst.get_angles()
+    most_frequent_string, sampling_results = qaoa_inst.get_string(betas, gammas, samples=10000)
+    pdb.set_trace()
 
 def create_operators_from_clauses(clauses):
     operators = []
