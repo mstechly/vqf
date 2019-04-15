@@ -21,8 +21,9 @@ def create_operators_from_clauses(clauses):
             continue
         variables = list(clause.free_symbols)
         for variable in variables:
-            mapping[str(variable)] = variable_counter
-            variable_counter += 1
+            if str(variable) not in mapping.keys():
+                mapping[str(variable)] = variable_counter
+                variable_counter += 1
         pauli_terms = []
         quadratic_pauli_terms = []
         for single_term in clause.args:
