@@ -6,6 +6,9 @@ from pyquil.paulis import PauliTerm, PauliSum
 import pyquil.quil as pq
 from pyquil.gates import X, I
 import scipy.optimize
+import numpy as np
+from grove.pyvqe.vqe import VQE
+from functools import reduce
 
 
 def factor_number(m):
@@ -13,8 +16,8 @@ def factor_number(m):
     cost_operators, mapping = create_operators_from_clauses(clauses)
     driver_operators = create_driver_operators(mapping)
 
-    minimizer_kwargs = {'method': 'Nelder-Mead',
-                            'options': {'ftol': 1e-4, 'xtol': 1e-4,
+    minimizer_kwargs = {'method': 'BFGS',
+                            'options': {'ftol': 1e-5, 'xtol': 1e-5,
                                         'disp': False}}
 
     vqe_option = {'disp': print, 'return_all': True,
@@ -25,7 +28,7 @@ def factor_number(m):
     qvm = api.QVMConnection()
     qaoa_inst = QAOA(qvm, 
                       qubits, 
-                      steps=3, 
+                      steps=5, 
                       init_betas=None, 
                       init_gammas=None,
                       cost_ham=cost_operators,
@@ -36,8 +39,12 @@ def factor_number(m):
                       vqe_options=vqe_option, 
                       store_basis=True)
 
+    # betas, gammas = grid_search_angles(qaoa_inst)
+    # qaoa_inst.betas = betas
+    # qaoa_inst.gammas = gammas
     betas, gammas = qaoa_inst.get_angles()
     most_frequent_string, sampling_results = qaoa_inst.get_string(betas, gammas, samples=10000)
+    print(most_frequent_string)
     pdb.set_trace()
 
 def create_operators_from_clauses(clauses):
@@ -86,6 +93,7 @@ def create_operators_from_clauses(clauses):
 
     return operators, mapping
 
+
 def create_driver_operators(mapping):
     driver_operators = []
     
@@ -93,6 +101,35 @@ def create_driver_operators(mapping):
         driver_operators.append(PauliSum([PauliTerm("X", value, -1.0)]))
 
     return driver_operators
+
+
+def grid_search_angles(qaoa_inst):
+    best_betas = None
+    best_gammas = None
+    best_energy = 10e6
+    starting_angles = [0] * qaoa_inst.steps
+    stopping_betas = [np.pi] * qaoa_inst.steps
+    stopping_gammas = [2*np.pi] * qaoa_inst.steps
+    #TODO: write formula for grid_size
+    grid_size = 12
+    all_betas = np.linspace(starting_angles, stopping_betas, grid_size)
+    all_gammas = np.linspace(starting_angles, stopping_gammas, grid_size)
+    vqe = VQE(qaoa_inst.minimizer, minimizer_args=qaoa_inst.minimizer_args,
+                  minimizer_kwargs=qaoa_inst.minimizer_kwargs)
+    cost_hamiltonian = reduce(lambda x, y: x + y, qaoa_inst.cost_ham)
+
+    for betas in all_betas:
+        for gammas in all_gammas:
+            stacked_params = np.hstack((betas, gammas))
+            program = qaoa_inst.get_parameterized_program()
+            energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, qaoa_inst.qvm)
+            if energy < best_energy:
+                best_energy = energy
+                best_betas = betas
+                best_gammas = gammas
+                print("Best energy:", best_energy)
+
+    return betas, gammas
 
 
 def main():
