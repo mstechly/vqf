@@ -3,6 +3,7 @@ import pdb
 import sympy
 from sympy import symbols, Eq, FiniteSet, solveset
 
+
 def create_problem_representation(m_int, apply_preprocessing=True):
     """
     Creates clauses VQF algorithm.
@@ -10,13 +11,20 @@ def create_problem_representation(m_int, apply_preprocessing=True):
 
     m_dict, p_dict, q_dict, z_dict = create_initial_dicts(m_int)
 
-    # simplify_clauses(clauses)
-    if apply_preprocessing:
-        p_dict, q_dict, z_dict = apply_preprocessing_rules(m_dict, p_dict, q_dict, z_dict)
-
+    
     clauses = create_clauses(m_dict, p_dict, q_dict, z_dict)
+    if apply_preprocessing:
+        known_symbols = {}
+        simplified_clauses = clauses
+        counter = 0
+        while len(known_symbols) > 0 or counter == 0:
+            print("Preprocessing iteration:", counter)
+            counter += 1
+            simplified_clauses, known_symbols = apply_preprocessing_rules(simplified_clauses)
 
-    return p_dict, q_dict, z_dict, clauses
+    p_dict, q_dict, z_dict = update_dictionaries(known_symbols, p_dict, q_dict, z_dict)
+    pdb.set_trace()
+    return p_dict, q_dict, z_dict, simplified_clauses
 
 
 def create_initial_dicts(m_int):
@@ -55,14 +63,6 @@ def create_initial_dicts(m_int):
     return m_dict, p_dict, q_dict, z_dict
 
 
-def apply_preprocessing_rules(m_dict, p_dict, q_dict, z_dict):
-    #Comes from the assumption that p and q are odd. If they are even, the problem is trivial.
-    p_dict[0] = 1
-    q_dict[0] = 1
-    z_dict[(0, 1)] = 0
-    return p_dict, q_dict, z_dict
-
-
 def create_clauses(m_dict, p_dict, q_dict, z_dict):
     clauses = []
     n_c = len(p_dict) + len(q_dict) - 1
@@ -76,18 +76,70 @@ def create_clauses(m_dict, p_dict, q_dict, z_dict):
 
         clause += -m_dict.get(i, 0)
 
-        # for j in range(1, n_c):
-        #     clause += - 2**j * z_dict.get((i, i+j), 0)
+        for j in range(1, n_c):
+            clause += - 2**j * z_dict.get((i, i+j), 0)
         clauses.append(clause)
+
     return clauses
 
 
-def simplify_clauses(clauses):
+def apply_preprocessing_rules(clauses):
     solution_set = FiniteSet(0, 1)
+    simple_rules = []
+    x, y, a, b = symbols('x y a b')
+    simple_rules.append([x * y - 1, {'x': 1, 'y': 1}])
+    simple_rules.append([x + y - 1, {'xy': 0}])
+    simple_rules.append([a - b * x, {'x': 1}])
+    known_symbols = {}
+
     for clause in clauses:
-        variables = list(clause.free_symbols)
-        solveset(Eq(clause, 0), variables, domain=solution_set)
-        #TODO
+        clause.subs(known_symbols)
+        clause_variables = list(clause.free_symbols)
+        
+        ## Rule 1:
+        rule = x * y - 1
+        if len(clause_variables) == 2:
+            substitution = clause.subs({clause_variables[0]: x, clause_variables[1]: y})
+            if substitution - rule == 0:
+                print("Rule 1 applied!")
+                known_symbols[clause_variables[0]] = 1
+                known_symbols[clause_variables[1]] = 1
+                continue
+
+        ## Rule 2:
+        rule = x + y - 1
+        if len(clause_variables) == 2:
+            substitution = clause.subs({clause_variables[0]: x, clause_variables[1]: y})
+            if substitution - rule == 0:
+                print("Rule 2 applied!")
+                known_symbols[clause_variables[0] * clause_variables[1]] = 0
+                continue
+
+    simplified_clauses = []
+    for clause in clauses:
+        simplified_clause = clause.subs(known_symbols)
+        if simplified_clause != 0:
+            simplified_clauses.append(simplified_clause)
+
+    return simplified_clauses, known_symbols
+
+
+def update_dictionaries(known_symbols, p_dict, q_dict, z_dict):
+    for symbol in known_symbols:
+        str_symbol = str(symbol)
+        symbol_type = str_symbol[0]
+        if symbol_type == 'p':
+            symbol_number = int(str_symbol.split('_')[1])
+            p_dict[symbol_number] = known_symbols[symbol]
+        if symbol_type == 'q':
+            symbol_number = int(str_symbol.split('_')[1])
+            q_dict[symbol_number] = known_symbols[symbol]
+        if symbol_type == 'z':
+            symbol_number_0 = int(str_symbol.split('_')[1])
+            symbol_number_1 = int(str_symbol.split('_')[2])
+            z_dict[(symbol_number_0, symbol_number_1)] = known_symbols[symbol]
+
+    return p_dict, q_dict, z_dict
 
 
 if __name__ == '__main__':
