@@ -1,7 +1,7 @@
 import numpy as np
 import pdb
 import sympy
-from sympy import symbols, Eq, FiniteSet, solveset
+from sympy import symbols, Symbol, Add, Mul
 
 
 def create_problem_representation(m_int, apply_preprocessing=True):
@@ -10,19 +10,21 @@ def create_problem_representation(m_int, apply_preprocessing=True):
     """
 
     m_dict, p_dict, q_dict, z_dict = create_initial_dicts(m_int)
-
     
     clauses = create_clauses(m_dict, p_dict, q_dict, z_dict)
     if apply_preprocessing:
         known_symbols = {}
+        all_known_symbols = {}
         simplified_clauses = clauses
         counter = 0
         while len(known_symbols) > 0 or counter == 0:
             print("Preprocessing iteration:", counter)
             counter += 1
             simplified_clauses, known_symbols = apply_preprocessing_rules(simplified_clauses)
+            all_known_symbols = {**all_known_symbols, **known_symbols}
+            print(known_symbols)
 
-    p_dict, q_dict, z_dict = update_dictionaries(known_symbols, p_dict, q_dict, z_dict)
+    p_dict, q_dict, z_dict = update_dictionaries(all_known_symbols, p_dict, q_dict, z_dict)
     pdb.set_trace()
     return p_dict, q_dict, z_dict, simplified_clauses
 
@@ -84,7 +86,6 @@ def create_clauses(m_dict, p_dict, q_dict, z_dict):
 
 
 def apply_preprocessing_rules(clauses):
-    solution_set = FiniteSet(0, 1)
     simple_rules = []
     x, y, a, b = symbols('x y a b')
     simple_rules.append([x * y - 1, {'x': 1, 'y': 1}])
@@ -93,9 +94,10 @@ def apply_preprocessing_rules(clauses):
     known_symbols = {}
 
     for clause in clauses:
-        clause.subs(known_symbols)
+        print("Current clause:", clause)
+        clause = clause.subs(known_symbols)
         clause_variables = list(clause.free_symbols)
-        
+
         ## Rule 1:
         rule = x * y - 1
         if len(clause_variables) == 2:
@@ -105,6 +107,7 @@ def apply_preprocessing_rules(clauses):
                 known_symbols[clause_variables[0]] = 1
                 known_symbols[clause_variables[1]] = 1
                 continue
+        clause = clause.subs(known_symbols)
 
         ## Rule 2:
         rule = x + y - 1
@@ -114,6 +117,58 @@ def apply_preprocessing_rules(clauses):
                 print("Rule 2 applied!")
                 known_symbols[clause_variables[0] * clause_variables[1]] = 0
                 continue
+        clause = clause.subs(known_symbols)
+
+        ## Rule 3:
+        if clause.func == Add and len(clause.args) == 2:
+            if len(clause.args[0].free_symbols) != 0:
+                continue
+            constant_a = clause.args[0]
+            if clause.args[1].func == Mul:
+                constant_b = clause.args[1].args[0]
+                symbol = clause.args[1] / constant_b
+                pdb.set_trace()
+                if constant_a > 0 or constant_b < 0:
+                    print("Rule 3 applied")
+                    known_symbols[symbol] = 1
+
+        clause = clause.subs(known_symbols)
+
+        ## Rule 4 & 5:
+        constant = 0
+        if clause.func == Mul:
+            print("Basic rule of x=0 applied!")
+            known_symbols[clause] = 0
+        elif clause.func == Add:
+            for part in clause.args:
+                variables = list(part.free_symbols)
+
+                if len(variables) == 0:
+                    constant += part
+
+                elif len(variables) == 1:
+                    # This means, that the coefficient is equal to 1
+                    if part.func == Symbol:
+                        continue
+                    if part.args[0] == variables[0] and part.args[1] != 0:
+                        break
+                    elif part.args[1] == variables[0] and part.args[0] != 0:
+                        break
+
+                elif len(variables) == 2:
+                    # This means there is a coefficient other than 1
+                    if len(part.args) != 2:
+                        break
+
+            else:
+                if constant == 0:
+                    print("Rule 4 applied!")
+                    for part in clause.args:
+                        known_symbols[part] = 0
+                elif constant > 0:
+                    print("Rule 5 applied!")
+                    for part in clause.args:
+                        known_symbols[part] = 1
 
     simplified_clauses = []
     for clause in clauses:
@@ -128,6 +183,8 @@ def update_dictionaries(known_symbols, p_dict, q_dict, z_dict):
     for symbol in known_symbols:
         str_symbol = str(symbol)
         symbol_type = str_symbol[0]
+        if '*' in str_symbol:
+            continue
         if symbol_type == 'p':
             symbol_number = int(str_symbol.split('_')[1])
             p_dict[symbol_number] = known_symbols[symbol]
