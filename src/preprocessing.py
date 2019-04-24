@@ -1,7 +1,6 @@
 import numpy as np
+from sympy import Symbol, Add, Mul
 import pdb
-from sympy import symbols, Symbol, Add, Mul
-from sympy import simplify
 
 def create_problem_representation(m_int, apply_preprocessing=True):
     """
@@ -47,12 +46,12 @@ def create_initial_dicts(m_int):
     p_dict = {}
     n_p = len(m_dict)
     for i in range(n_p):
-        p_dict[i] = symbols('p_'+str(i))
+        p_dict[i] = Symbol('p_'+str(i))
 
     q_dict = {}
     n_q = int(np.ceil(len(m_dict)/2))
     for i in range(n_q):
-        q_dict[i] = symbols('q_'+str(i))
+        q_dict[i] = Symbol('q_'+str(i))
 
     n_c = n_p + n_q - 1
 
@@ -61,15 +60,12 @@ def create_initial_dicts(m_int):
         for j in range(i+1):
             if i!=j:
                 if i >= n_m:
-                    # z_dict[(j, i)] = 0
                     pass
                 elif j==0:
-                    # z_dict[(j, i)] = 0
                     pass
                 else:
-                    z_dict[(j, i)] = symbols('z_'+str(j)+'_'+str(i))
+                    z_dict[(j, i)] = Symbol('z_'+str(j)+'_'+str(i))
             else:
-                # z_dict[(j, i)] = 0
                 pass
 
     return m_dict, p_dict, q_dict, z_dict
@@ -100,9 +96,7 @@ def create_clauses(m_dict, p_dict, q_dict, z_dict):
             max_carry = 0
 
         for j in range(i + max_carry + 1, n_c):
-            print("Z", i, j, z_dict.get((i, j), 0))
             if z_dict.get((i, j), 0) != 0:
-                print(z_dict[(i, j)])
                 z_dict[(i, j)] = 0
         
         for j in range(1, n_c):
@@ -112,137 +106,32 @@ def create_clauses(m_dict, p_dict, q_dict, z_dict):
     return clauses
 
 
-def apply_preprocessing_rules(clauses, verbose=True):
-    x, y = symbols('x y')
+def apply_preprocessing_rules(clauses, verbose=False):
     known_symbols = {}
 
     for clause in clauses:
         clause = clause.subs(known_symbols).expand()
-        if verbose:
-            print("Current clause:", clause)
+        # if verbose:
+        print("Current clause:", clause)
 
-        ## Z-rule
-        # Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
-        # z12 must be equal to 0, otherwise the equation can't be satisfied
-        max_non_z_sum = 0
-        z_variables = {}
-        for term in clause.args:
-            term_variables = list(term.free_symbols)
-
-            if len(term_variables) == 0:
-                max_non_z_sum += term
-            elif len(term_variables) == 1 and 'z' in str(term_variables[0]):
-                # We care only for z-terms with coefficient other than 1
-                if term.func == Mul:
-                    z_variables[term_variables[0]] = term.args[0]
-
-                
-            elif len(term_variables) == 1 and 'z' not in str(term_variables[0]):
-                if term.func == Symbol:
-                    max_non_z_sum += 1
-                elif term.func == Mul:
-                    max_non_z_sum += term.args[0]
-            else:
-                if len(term.args) == 2:
-                    max_non_z_sum += 1
-                else:
-                    max_non_z_sum += term.args[0]
-
-        if len(z_variables) > 0:
-            for variable, coefficient in z_variables.items():
-                if -coefficient > max_non_z_sum:
-                    if verbose:
-                        print("Z rule applied!", variable, "= 0")
-                    known_symbols[variable] = 0
-
+        known_symbols = apply_z_rule(clause, known_symbols, verbose)
         clause = clause.subs(known_symbols).expand()
 
-        if clause.func == Add and len(clause.args)==2:
-            ## Basic rule of equality
-            # Example: x - 1 = 0
-            clause_variables = list(clause.free_symbols)
-            if len(clause_variables) == 1:
-                if verbose:
-                    print("Rule of equality applied!", clause)
-                known_symbols[clause.args[1]] = -clause.args[0]
-            ## Rule 1:
-            elif len(clause_variables) == 2:
-                rule = x * y - 1
-                substitution = clause.subs({clause_variables[0]: x, clause_variables[1]: y})
-                if substitution - rule == 0:
-                    if verbose:
-                        print("Rule 1 applied!", clause)
-                    known_symbols[clause_variables[0]] = 1
-                    known_symbols[clause_variables[1]] = 1
-
+        known_symbols = apply_rule_of_equality(clause, known_symbols, verbose)
         clause = clause.subs(known_symbols).expand()
 
-        ## Rule 2:
-        rule = x + y - 1
-        clause_variables = list(clause.free_symbols)
-        if clause.func == Add and len(clause.args) == 3 and len(clause_variables)==2:
-            substitution = clause.subs({clause_variables[0]: x, clause_variables[1]: y})
-            if substitution - rule == 0:
-                if verbose:
-                    print("Rule 2 applied!", clause)
-                known_symbols[clause_variables[0] * clause_variables[1]] = 0
-                known_symbols[clause_variables[0]] = 1 - clause_variables[1]
-
+        known_symbols = apply_rule_1(clause, known_symbols, verbose)
         clause = clause.subs(known_symbols).expand()
 
-        ## Rule 3:
-        if clause.func == Add and len(clause.args) == 2:
-            if len(clause.args[0].free_symbols) != 0:
-                continue
-            constant_a = clause.args[0]
-            if clause.args[1].func == Mul:
-                constant_b = clause.args[1].args[0]
-                symbol = clause.args[1] / constant_b
-                if constant_a > 0 or constant_b < 0:
-                    if verbose:
-                        print("Rule 3 applied", clause)
-                    known_symbols[symbol] = 1
-
+        known_symbols = apply_rule_2(clause, known_symbols, verbose)
         clause = clause.subs(known_symbols).expand()
 
-        ## Rule 4 & 5:
-        constant = 0
-        if clause.func == Mul:
-            if verbose:
-                print("Basic rule of x=0 applied!", clause)
-            known_symbols[clause] = 0
-        elif clause.func == Add:
-            for part in clause.args:
-                variables = list(part.free_symbols)
+        known_symbols = apply_rule_3(clause, known_symbols, verbose)
+        clause = clause.subs(known_symbols).expand()
 
-                if len(variables) == 0:
-                    constant += part
+        known_symbols = apply_rules_4_and_5(clause, known_symbols, verbose)
+        clause = clause.subs(known_symbols).expand()
 
-                elif len(variables) == 1:
-                    # This means, that the coefficient is equal to 1
-                    if part.func == Symbol:
-                        continue
-                    if part.args[0] == variables[0] and part.args[1] != 0:
-                        break
-                    elif part.args[1] == variables[0] and part.args[0] != 0:
-                        break
-
-                elif len(variables) == 2:
-                    # This means there is a coefficient other than 1
-                    if len(part.args) != 2:
-                        break
-
-            else:
-                if constant == 0:
-                    if verbose:
-                        print("Rule 4 applied!", clause)
-                    for part in clause.args:
-                        known_symbols[part] = 0
-                elif constant == len(clause.args) - 1:
-                    if verbose:
-                        print("Rule 5 applied!", clause)
-                    for part in clause.args:
-                        known_symbols[part] = 1
 
     simplified_clauses = []
     for clause in clauses:
@@ -252,6 +141,144 @@ def apply_preprocessing_rules(clauses, verbose=True):
 
     return simplified_clauses, known_symbols
 
+
+def apply_z_rule(clause, known_symbols, verbose):
+    ## Z-rule
+    # Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
+    # z12 must be equal to 0, otherwise the equation can't be satisfied
+    max_non_z_sum = 0
+    z_variables = {}
+    for term in clause.args:
+        term_variables = list(term.free_symbols)
+
+        if len(term_variables) == 0:
+            max_non_z_sum += term
+        elif len(term_variables) == 1 and 'z' in str(term_variables[0]):
+            # We care only for z-terms with coefficient other than 1
+            if term.func == Mul:
+                z_variables[term_variables[0]] = term.args[0]
+        elif len(term_variables) == 1 and 'z' not in str(term_variables[0]):
+            if term.func == Symbol:
+                max_non_z_sum += 1
+            elif term.func == Mul:
+                max_non_z_sum += term.args[0]
+        else:
+            if len(term.args) == 2:
+                max_non_z_sum += 1
+            else:
+                max_non_z_sum += term.args[0]
+
+    if len(z_variables) > 0:
+        for variable, coefficient in z_variables.items():
+            if -coefficient > max_non_z_sum:
+                if verbose:
+                    print("Z rule applied!", variable, "= 0")
+                known_symbols[variable] = 0
+
+    return known_symbols
+
+
+def apply_rule_of_equality(clause, known_symbols, verbose):
+    if clause.func == Add and len(clause.args)==2:
+        ## Basic rule of equality
+        # Example: x - 1 = 0
+        clause_variables = list(clause.free_symbols)
+        if len(clause_variables) == 1:
+            if verbose:
+                print("Rule of equality applied!", clause)
+            known_symbols[clause.args[1]] = -clause.args[0]
+    return known_symbols
+
+
+def apply_rule_1(clause, known_symbols, verbose):
+    clause_variables = list(clause.free_symbols)
+    if clause.func == Add and len(clause.args)==2:
+        if len(clause_variables) == 2:
+            x = Symbol('x')
+            y = Symbol('y')
+            rule = x * y - 1
+            substitution = clause.subs({clause_variables[0]: x, clause_variables[1]: y})
+            if substitution - rule == 0:
+                if verbose:
+                    print("Rule 1 applied!", clause)
+                known_symbols[clause_variables[0]] = 1
+                known_symbols[clause_variables[1]] = 1
+    return known_symbols
+
+
+def apply_rule_2(clause, known_symbols, verbose):
+    ## Rule 2:
+    x = Symbol('x')
+    y = Symbol('y')
+
+    rule = x + y - 1
+    clause_variables = list(clause.free_symbols)
+    if clause.func == Add and len(clause.args) == 3 and len(clause_variables)==2:
+        substitution = clause.subs({clause_variables[0]: x, clause_variables[1]: y})
+        if substitution - rule == 0:
+            if verbose:
+                print("Rule 2 applied!", clause)
+            known_symbols[clause_variables[0] * clause_variables[1]] = 0
+            # known_symbols[clause_variables[0]] = 1 - clause_variables[1]
+
+    return known_symbols
+
+
+def apply_rule_3(clause, known_symbols, verbose):
+    ## Rule 3:
+    if clause.func == Add and len(clause.args) == 2:
+        if len(clause.args[0].free_symbols) == 0:
+            constant_a = clause.args[0]
+            if clause.args[1].func == Mul:
+                constant_b = clause.args[1].args[0]
+                symbol = clause.args[1] / constant_b
+                if constant_a > 0 or constant_b < 0:
+                    if verbose:
+                        print("Rule 3 applied", clause)
+                    known_symbols[symbol] = 1
+    return known_symbols
+
+
+def apply_rules_4_and_5(clause, known_symbols, verbose):
+    ## Rule 4 & 5:
+    constant = 0
+    if clause.func == Mul:
+        if verbose:
+            print("Basic rule of x=0 applied!", clause)
+        known_symbols[clause] = 0
+    elif clause.func == Add:
+        for part in clause.args:
+            variables = list(part.free_symbols)
+
+            if len(variables) == 0:
+                constant += part
+
+            elif len(variables) == 1:
+                # This means, that the coefficient is equal to 1
+                if part.func == Symbol:
+                    continue
+                if part.args[0] == variables[0] and part.args[1] != 0:
+                    break
+                elif part.args[1] == variables[0] and part.args[0] != 0:
+                    break
+
+            elif len(variables) == 2:
+                # This means there is a coefficient other than 1
+                if len(part.args) != 2:
+                    break
+
+        else:
+            if constant == 0:
+                if verbose:
+                    print("Rule 4 applied!", clause)
+                for part in clause.args:
+                    known_symbols[part] = 0
+            elif constant == len(clause.args) - 1:
+                if verbose:
+                    print("Rule 5 applied!", clause)
+                for part in clause.args:
+                    known_symbols[part] = 1
+    return known_symbols
 
 def update_dictionaries(known_symbols, p_dict, q_dict, z_dict):
     for symbol in known_symbols:
