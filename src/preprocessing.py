@@ -238,7 +238,7 @@ def apply_preprocessing_rules(clauses, verbose=True):
                         print("Rule 4 applied!", clause)
                     for part in clause.args:
                         known_symbols[part] = 0
-                elif constant > 0:
+                elif constant == len(clause.args) - 1:
                     if verbose:
                         print("Rule 5 applied!", clause)
                     for part in clause.args:
