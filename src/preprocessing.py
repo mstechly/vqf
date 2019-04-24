@@ -178,6 +178,30 @@ def apply_z_rule(clause, known_symbols, verbose):
     return known_symbols
 
 
+def apply_z_rule_2(clause, known_symbols, verbose):
+    # Example: p_1 + q_1 - 2*z_1_2 = 0
+    # p1 must be equal to q1, otherwise the equation can't be satisfied
+    if clause.func == Add and len(clause.args) == 3:
+        z_term = None
+        z_mul = None
+        non_z_terms = []
+        for term in clause.args:
+            term_variables = list(term.free_symbols)
+            if len(term_variables) == 1 and 'z' in str(term_variables[0]):
+                if term.func == Mul:
+                    z_mul = term.args[0]
+                    z_term = term_variables[0]
+            else:
+                non_z_terms.append(term)
+
+        if z_term is not None and z_mul==-2:
+            if verbose:
+                print("Z rule 2 applied!", non_z_terms[0], "=", non_z_terms[1])
+
+            known_symbols[non_z_terms[0]] = non_z_terms[1]
+
+    return known_symbols
+
 def apply_rule_of_equality(clause, known_symbols, verbose):
     if clause.func == Add and len(clause.args)==2:
         ## Basic rule of equality
