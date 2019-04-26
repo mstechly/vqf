@@ -147,12 +147,14 @@ def apply_preprocessing_rules(clauses, verbose=True):
 
     return simplified_clauses, known_symbols
 
+
 def simplify_clause(clause, known_symbols):
     simplified_clause = clause.subs(known_symbols).expand()
     if simplified_clause.func == Add:
         factored_clause = factor(simplified_clause)
         if factored_clause.func == Mul:
-            simplified_clause = simplified_clause / factored_clause.args[0]
+            if len(factored_clause.args[0].free_symbols) == 0:
+                simplified_clause = simplified_clause / factored_clause.args[0]
 
         # Simplifies x**2 -> x, since the variables we use are binary.
         for term in simplified_clause.args:
