@@ -2,24 +2,25 @@ import numpy as np
 from sympy import Symbol, Add, Mul, Pow, factor
 import pdb
 
-def create_clauses(m_int, apply_preprocessing=True):
+def create_clauses(m_int, apply_preprocessing=True, verbose=True):
     """
     Creates clauses for the VQF algorithm.
     """
 
     m_dict, p_dict, q_dict, z_dict = create_initial_dicts(m_int)
     
-    clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict)
+    clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing)
+    known_symbols = {}
+    simplified_clauses = clauses
+
+
     if apply_preprocessing:
-        known_symbols = {}
-        simplified_clauses = clauses
         counter = 0
         should_continue = True
         while should_continue:
-            print("Preprocessing iteration:", counter)
-            
-            simplified_clauses, new_known_symbols = apply_preprocessing_rules(simplified_clauses)
-            print(new_known_symbols)
+            if verbose:
+                print("Preprocessing iteration:", counter)
+            simplified_clauses, new_known_symbols = apply_preprocessing_rules(simplified_clauses, verbose)
             if len(new_known_symbols) > len(known_symbols):
                 should_continue = True
                 known_symbols = new_known_symbols
@@ -71,7 +72,7 @@ def create_initial_dicts(m_int):
     return m_dict, p_dict, q_dict, z_dict
 
 
-def create_basic_clauses(m_dict, p_dict, q_dict, z_dict):
+def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=True):
     clauses = []
     n_c = len(p_dict) + len(q_dict) - 1
     for i in range(n_c):
@@ -83,21 +84,21 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict):
 
         for j in range(i+1):
             clause += z_dict.get((j, i), 0)
+        if apply_preprocessing:
+            # This part exists in order to limit the number of z terms.
+            if clause.func == Mul:
+                max_sum = 0
+            elif clause.func == Add:
+                max_sum = len(clause.args) - m_dict.get(i, 0)
 
-        # This part exists in order to limit the number of z terms.
-        if clause.func == Mul:
-            max_sum = 0
-        elif clause.func == Add:
-            max_sum = len(clause.args) - m_dict.get(i, 0)
+            if max_sum != 0:
+                max_carry = int(np.floor(np.log2(max_sum)))
+            else:
+                max_carry = 0
 
-        if max_sum != 0:
-            max_carry = int(np.floor(np.log2(max_sum)))
-        else:
-            max_carry = 0
-
-        for j in range(i + max_carry + 1, n_c):
-            if z_dict.get((i, j), 0) != 0:
-                z_dict[(i, j)] = 0
+            for j in range(i + max_carry + 1, n_c):
+                if z_dict.get((i, j), 0) != 0:
+                    z_dict[(i, j)] = 0
         
         for j in range(1, n_c):
             clause += - 2**j * z_dict.get((i, i+j), 0)
@@ -110,6 +111,8 @@ def apply_preprocessing_rules(clauses, verbose=True):
     known_symbols = {}
 
     for clause in clauses:
+        if clause == 0:
+            continue
         clause = simplify_clause(clause, known_symbols)
         if verbose:
             print("Current clause:", clause)
@@ -139,8 +142,8 @@ def apply_preprocessing_rules(clauses, verbose=True):
     simplified_clauses = []
     for clause in clauses:
         simplified_clause = simplify_clause(clause, known_symbols)
-        if simplified_clause != 0:
-            simplified_clauses.append(simplified_clause)
+        # if simplified_clause != 0:
+        simplified_clauses.append(simplified_clause)
 
     return simplified_clauses, known_symbols
 
@@ -156,6 +159,7 @@ def simplify_clause(clause, known_symbols):
             if term.func == Pow:
                 simplified_clause = simplified_clause - term + term.args[0]
     return simplified_clause
+
 
 def apply_z_rule_1(clause, known_symbols, verbose):
     # Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
@@ -317,6 +321,7 @@ def apply_rules_4_and_5(clause, known_symbols, verbose):
                 for part in clause.args:
                     known_symbols[part] = 1
     return known_symbols
+
 
 def update_dictionaries(known_symbols, p_dict, q_dict, z_dict):
     for symbol in known_symbols:
