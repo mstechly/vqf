@@ -285,9 +285,9 @@ def apply_rule_2(clause, known_symbols, verbose):
         substitution = clause.subs({clause_variables[0]: x, clause_variables[1]: y})
         if substitution - rule == 0:
             if verbose:
-                print("Rule 2 applied!", clause)
+                print("Rule 2 applied!", clause_variables[0], "=", 1 - clause_variables[1])
             known_symbols[clause_variables[0] * clause_variables[1]] = 0
-            known_symbols[clause_variables[1]] = 1 - clause_variables[0]
+            known_symbols[clause_variables[0]] = 1 - clause_variables[1]
 
     return known_symbols
 
