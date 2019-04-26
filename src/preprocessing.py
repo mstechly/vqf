@@ -258,6 +258,10 @@ def apply_z_rule_2(clause, known_symbols, verbose):
 
 
 def apply_rule_of_equality(clause, known_symbols, verbose):
+
+    if clause.func == Symbol:
+        known_symbols[clause] = 0
+
     if clause.func == Add and len(clause.args) == 2:
         ## Basic rule of equality
         # Example: x - 1 = 0
