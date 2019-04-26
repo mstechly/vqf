@@ -1,145 +1,46 @@
-from preprocessing import create_problem_representation
+from preprocessing import create_clauses
+from vqf_quantum import perform_qaoa
 import pdb
-import pyquil.api as api
-from grove.pyqaoa.qaoa import QAOA
-from pyquil.paulis import PauliTerm, PauliSum
-import pyquil.quil as pq
-from pyquil.gates import X, I
-import scipy.optimize
-import numpy as np
-from grove.pyvqe.vqe import VQE
-from functools import reduce
-
 
 def factor_number(m):
-    p_dict, q_dict, z_dict, clauses = create_problem_representation(m)
-    cost_operators, mapping = create_operators_from_clauses(clauses)
-    driver_operators = create_driver_operators(mapping)
+    p_dict, q_dict, z_dict, clauses = create_clauses(m, apply_preprocessing=False)
+    qaoa_solution, mapping = perform_qaoa(clauses)
+    p_dict, q_dict, z_dict = update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict)
+    p, q = decode_solution(p_dict, q_dict)
+    return p, q
 
-    minimizer_kwargs = {'method': 'BFGS',
-                            'options': {'ftol': 1e-5, 'xtol': 1e-5,
-                                        'disp': False}}
+def update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict):
+    values_dict = {symbol_str: qaoa_solution[index] for symbol_str, index in mapping.items()}
 
-    vqe_option = {'disp': print, 'return_all': True,
-                  'samples': None}
+    for x_dict in [p_dict, q_dict, z_dict]:
+        for key, value in x_dict.items():
+            if str(value) in values_dict.keys():
+                x_dict[key] = values_dict[str(value)]    
+    return p_dict, q_dict, z_dict
 
-    qubits=list(range(len(mapping)));
+def decode_solution(p_dict, q_dict):
+    p = 0
+    for key, value in p_dict.items():
+        p += value * 2**key
 
-    qvm = api.QVMConnection()
-    qaoa_inst = QAOA(qvm, 
-                      qubits, 
-                      steps=5, 
-                      init_betas=None, 
-                      init_gammas=None,
-                      cost_ham=cost_operators,
-                      ref_ham=driver_operators, 
-                      minimizer=scipy.optimize.minimize,
-                      minimizer_kwargs=minimizer_kwargs,
-                      rand_seed=None,
-                      vqe_options=vqe_option, 
-                      store_basis=True)
+    q = 0
+    for key, value in q_dict.items():
+        q += value * 2**key
 
-    # betas, gammas = grid_search_angles(qaoa_inst)
-    # qaoa_inst.betas = betas
-    # qaoa_inst.gammas = gammas
-    betas, gammas = qaoa_inst.get_angles()
-    most_frequent_string, sampling_results = qaoa_inst.get_string(betas, gammas, samples=10000)
-    print(most_frequent_string)
-    pdb.set_trace()
-
-def create_operators_from_clauses(clauses):
-    operators = []
-    mapping = {}
-    variable_counter = 0
-    for clause in clauses:
-        if clause == 0:
-            continue
-        variables = list(clause.free_symbols)
-        for variable in variables:
-            if str(variable) not in mapping.keys():
-                mapping[str(variable)] = variable_counter
-                variable_counter += 1
-        pauli_terms = []
-        quadratic_pauli_terms = []
-        for single_term in clause.args:
-            if len(single_term.free_symbols) == 0:
-                print("Constant term", single_term)
-                pauli_terms.append(PauliTerm("I", 0, int(single_term) / 2))
-            elif len(single_term.free_symbols) == 1:
-                print("Single term", single_term)
-                symbol = list(single_term.free_symbols)[0]
-                symbol_id = mapping[str(symbol)]
-                pauli_terms.append(PauliTerm("I", symbol_id, 1/2))
-                pauli_terms.append(PauliTerm("Z", symbol_id, -1/2))
-            elif len(single_term.free_symbols) == 2:
-                print("Double term", single_term)
-                symbol_1 = list(single_term.free_symbols)[0]
-                symbol_2 = list(single_term.free_symbols)[1]
-                symbol_id_1 = mapping[str(symbol_1)]
-                symbol_id_2 = mapping[str(symbol_2)]
-                pauli_term_1 = PauliTerm("I", symbol_id_1, 1/2) - PauliTerm("Z", symbol_id_1, 1/2)
-                pauli_term_2 = PauliTerm("I", symbol_id_2, 1/2) - PauliTerm("Z", symbol_id_2, 1/2)
-                quadratic_pauli_terms.append(pauli_term_1 * pauli_term_2)
-            else:
-                print("Terms of orders higher than quadratic are not handled.")
-        clause_operator = PauliSum(pauli_terms)
-        for quadratic_term in quadratic_pauli_terms:
-            clause_operator += quadratic_term
-        squared_clause_operator = clause_operator*clause_operator
-        print("C:", clause_operator)
-        print("C**2:", squared_clause_operator)
-        operators.append(squared_clause_operator)
-
-
-    return operators, mapping
-
-
-def create_driver_operators(mapping):
-    driver_operators = []
-    
-    for key, value in mapping.items():
-        driver_operators.append(PauliSum([PauliTerm("X", value, -1.0)]))
-
-    return driver_operators
-
-
-def grid_search_angles(qaoa_inst):
-    best_betas = None
-    best_gammas = None
-    best_energy = 10e6
-    starting_angles = [0] * qaoa_inst.steps
-    stopping_betas = [np.pi] * qaoa_inst.steps
-    stopping_gammas = [2*np.pi] * qaoa_inst.steps
-    #TODO: write formula for grid_size
-    grid_size = 12
-    all_betas = np.linspace(starting_angles, stopping_betas, grid_size)
-    all_gammas = np.linspace(starting_angles, stopping_gammas, grid_size)
-    vqe = VQE(qaoa_inst.minimizer, minimizer_args=qaoa_inst.minimizer_args,
-                  minimizer_kwargs=qaoa_inst.minimizer_kwargs)
-    cost_hamiltonian = reduce(lambda x, y: x + y, qaoa_inst.cost_ham)
-
-    for betas in all_betas:
-        for gammas in all_gammas:
-            stacked_params = np.hstack((betas, gammas))
-            program = qaoa_inst.get_parameterized_program()
-            energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, qaoa_inst.qvm)
-            if energy < best_energy:
-                best_energy = energy
-                best_betas = betas
-                best_gammas = gammas
-                print("Best energy:", best_energy)
-
-    return betas, gammas
-
+    return p, q
 
 def main():
     m = 15
-    if m % 2 == 0:
-        p = 2
-        q = int(m / 2)
-        print("The primes are:", p,"and", q)
-    else:
-        factor_number(m)
+    # for m in [15, 21, 25, 33, 35, 39]:
+    for m in [15]:
+        print("M:", m)
+        if m % 2 == 0:
+            p = 2
+            q = int(m / 2)
+            print("The primes are:", p, "and", q)
+        else:
+            p, q = factor_number(m)
+            print("The primes of ",m, "are:", p, "and", q)
 
 if __name__ == '__main__':
     main()
