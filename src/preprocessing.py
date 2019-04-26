@@ -18,19 +18,22 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
     known_symbols = {}
     simplified_clauses = clauses
 
-
     if apply_preprocessing:
         counter = 0
         should_continue = True
         while should_continue:
             if verbose:
                 print("Preprocessing iteration:", counter)
-            simplified_clauses, new_known_symbols = apply_preprocessing_rules(simplified_clauses, verbose)
-            if len(new_known_symbols) > len(known_symbols):
-                should_continue = True
-                known_symbols = new_known_symbols
+
+            new_simplified_clauses, new_known_symbols = apply_preprocessing_rules(simplified_clauses, verbose)
+            for new_clause, old_clause in zip(new_simplified_clauses, simplified_clauses):
+                if new_clause != old_clause:
+                    break
             else:
                 should_continue = False
+
+            simplified_clauses = new_simplified_clauses
+            known_symbols = {**known_symbols, **new_known_symbols}
 
             if counter == 0:
                 should_continue = True
