@@ -8,7 +8,12 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
     """
 
     m_dict, p_dict, q_dict, z_dict = create_initial_dicts(m_int)
-    
+    if apply_preprocessing:
+        q_dict[0] = 1
+        p_dict[0] = 1
+        if len(q_dict) == 2:
+            q_dict[1] = 1
+
     clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing)
     known_symbols = {}
     simplified_clauses = clauses
@@ -86,10 +91,16 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
             clause += z_dict.get((j, i), 0)
         if apply_preprocessing:
             # This part exists in order to limit the number of z terms.
+            if type(clause) == int:
+                continue
+
             if clause.func == Mul:
-                max_sum = 0
+                max_sum = 1
             elif clause.func == Add:
                 max_sum = len(clause.args) - m_dict.get(i, 0)
+            elif clause.func == Symbol:
+                max_sum = 1
+
 
             if max_sum != 0:
                 max_carry = int(np.floor(np.log2(max_sum)))
