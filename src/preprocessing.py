@@ -123,13 +123,15 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
 
 def apply_preprocessing_rules(clauses, verbose=True):
     known_symbols = {}
+    counter = 0 
 
     for clause in clauses:
         if clause == 0:
             continue
         clause = simplify_clause(clause, known_symbols)
         if verbose:
-            print("Current clause:", clause)
+            print("Current clause", counter, ":", clause)
+        counter += 1
 
         known_symbols = apply_z_rule_1(clause, known_symbols, verbose)
         clause = simplify_clause(clause, known_symbols)
