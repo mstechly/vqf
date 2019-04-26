@@ -199,28 +199,52 @@ def apply_z_rule_1(clause, known_symbols, verbose):
 
 
 def apply_z_rule_2(clause, known_symbols, verbose):
-    # Example: p_1 + q_1 - 2*z_1_2 = 0
-    # p1 must be equal to q1, otherwise the equation can't be satisfied
+    # Example, variant A: p_1 + q_1 - 2*z_1_2 = 0
+    # p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied
+    # Example, variant B: p_1 + 2*q_1 - 2*z_1_2 = 0
+    # p1 must be equal to 0 and z_1_2 to q_1, otherwise the equation can't be satisfied
+    x = Symbol('x')
+    y = Symbol('y')
+    z = Symbol('z')
+    rule_A = x + y - 2*z
+    rule_B = x + 2*y - 2*z
+    variables = list(clause.free_symbols)
+    z_variable = None
+    non_z_variables =[]
     if clause.func == Add and len(clause.args) == 3:
-        z_term = None
-        z_mul = None
-        non_z_terms = []
-        for term in clause.args:
-            term_variables = list(term.free_symbols)
-            if len(term_variables) == 1 and 'z' in str(term_variables[0]):
-                if term.func == Mul:
-                    z_mul = term.args[0]
-                    z_term = term_variables[0]
+        for variable in variables:
+            if "z" in str(variable):
+                z_variable = variable
             else:
-                non_z_terms.append(term)
+                non_z_variables.append(variable)
+        else:
+            if z_variable is None:
+                return known_symbols
 
-        if z_term is not None and z_mul==-2:
+        substitution_1 = clause.subs({non_z_variables[0]: x, non_z_variables[1]: y, z_variable: z})
+        substitution_2 = clause.subs({non_z_variables[1]: x, non_z_variables[0]: y, z_variable: z})
+
+        if substitution_1 - rule_A == 0:
             if verbose:
-                print("Z rule 2 applied!", non_z_terms[0], "=", non_z_terms[1])
-
-            known_symbols[non_z_terms[0]] = non_z_terms[1]
+                print("Z rule 2A applied!", non_z_variables[0], "=", non_z_variables[1])
+                print("       and        ", z_variable, "=", non_z_variables[1])
+            known_symbols[non_z_variables[0]] = non_z_variables[1]
+            known_symbols[z_variable] = non_z_variables[1]
+        elif substitution_1 - rule_B == 0:
+            if verbose:
+                print("Z rule 2B applied!", non_z_variables[0], "=", 0)
+                print("       and        ", z_variable, "=", non_z_variables[1])
+            known_symbols[non_z_variables[0]] = 0
+            known_symbols[z_variable] = non_z_variables[1]
+        elif substitution_2 - rule_B == 0:
+            if verbose:
+                print("Z rule 2B applied!", non_z_variables[1], "=", 0)
+                print("       and        ", z_variable, "=", non_z_variables[0])
+            known_symbols[non_z_variables[1]] = 0
+            known_symbols[z_variable] = non_z_variables[0]
 
     return known_symbols
+
 
 def apply_rule_of_equality(clause, known_symbols, verbose):
     if clause.func == Add and len(clause.args) == 2:
