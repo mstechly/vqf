@@ -389,7 +389,3 @@ def update_dictionaries(known_symbols, p_dict, q_dict, z_dict):
     z_dict = {key:value for key, value in z_dict.items() if value != 0}
 
     return p_dict, q_dict, z_dict
-
-
-if __name__ == '__main__':
-    main()
