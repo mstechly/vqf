@@ -105,18 +105,21 @@ def create_driver_operators(mapping):
 def grid_search_angles(qaoa_inst, grid_size=24):
     best_betas = None
     best_gammas = None
-    best_energy = 10e6
-    starting_angles = [0] * qaoa_inst.steps
-    stopping_betas = [np.pi] * qaoa_inst.steps
-    stopping_gammas = [2*np.pi] * qaoa_inst.steps
-    all_betas = np.linspace(starting_angles, stopping_betas, grid_size)
-    all_gammas = np.linspace(starting_angles, stopping_gammas, grid_size)
+    best_energy = np.inf
+
+    beta_ranges = [np.linspace(0, np.pi, grid_size)] * qaoa_inst.steps
+    all_betas_values = np.vstack(np.meshgrid(*beta_ranges)).reshape(qaoa_inst.steps, -1).T
+
+    gamma_ranges = [np.linspace(0, 2*np.pi, grid_size)] * qaoa_inst.steps
+    all_gamma_values = np.vstack(np.meshgrid(*gamma_ranges)).reshape(qaoa_inst.steps, -1).T        
+
+
     vqe = VQE(qaoa_inst.minimizer, minimizer_args=qaoa_inst.minimizer_args,
                   minimizer_kwargs=qaoa_inst.minimizer_kwargs)
     cost_hamiltonian = reduce(lambda x, y: x + y, qaoa_inst.cost_ham)
 
-    for betas in all_betas:
-        for gammas in all_gammas:
+    for betas in all_betas_values:
+        for gammas in all_gamma_values:
             stacked_params = np.hstack((betas, gammas))
             program = qaoa_inst.get_parameterized_program()
             energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, qaoa_inst.qvm)
@@ -124,22 +127,7 @@ def grid_search_angles(qaoa_inst, grid_size=24):
                 best_energy = energy
                 best_betas = betas
                 best_gammas = gammas
-                print("Best energy:", best_energy)
+                print("Lowest energy:", best_energy)
+                print("Angles:", best_betas, best_gammas)
 
     return best_betas, best_gammas
-
-
-def main():
-    m = 15
-    # for m in [15, 21, 25, 33, 35, 39]:
-    for m in [15]:
-        print("M:", m)
-        if m % 2 == 0:
-            p = 2
-            q = int(m / 2)
-            print("The primes are:", p,"and", q)
-        else:
-            factor_number(m)
-
-if __name__ == '__main__':
-    main()
