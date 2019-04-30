@@ -290,8 +290,14 @@ def apply_rule_of_equality(clause, known_symbols, verbose):
 
     if clause.func == Symbol:
         known_symbols[clause] = 0
-
-    if clause.func == Add and len(clause.args) == 2:
+    elif clause.func == Mul:
+        if len(clause.free_symbols) == 1:
+            known_symbols[clause.free_symbols[0]] = 0
+        else:
+            known_symbols[clause] = 0
+        if verbose:
+            print("Rule of equality applied!", clause)
+    elif clause.func == Add and len(clause.args) == 2:
         # This prevents from substituting in cases where we have valid clauses like:
         # q1 - q1*q2 = 0
         if len(clause.args[0].free_symbols) == 2 or len(clause.args[1].free_symbols) == 2:
