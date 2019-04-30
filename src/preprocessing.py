@@ -15,7 +15,7 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
             q_dict[1] = 1
 
     clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing)
-    known_symbols = {}
+    known_expressions = {}
     simplified_clauses = clauses
 
     if apply_preprocessing:
@@ -25,7 +25,7 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
             if verbose:
                 print("Preprocessing iteration:", counter)
 
-            new_simplified_clauses, new_known_symbols = apply_preprocessing_rules(simplified_clauses, verbose)
+            new_simplified_clauses, new_known_expressions = apply_preprocessing_rules(simplified_clauses, verbose)
             for new_clause, old_clause in zip(new_simplified_clauses, simplified_clauses):
                 if new_clause != old_clause:
                     break
@@ -33,7 +33,7 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
                 should_continue = False
 
             simplified_clauses = new_simplified_clauses
-            known_symbols = {**known_symbols, **new_known_symbols}
+            known_expressions = {**known_expressions, **new_known_expressions}
 
             if counter == 0:
                 should_continue = True
@@ -43,7 +43,7 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
         for clause in simplified_clauses:
             print(clause)
 
-    p_dict, q_dict, z_dict = update_dictionaries(known_symbols, p_dict, q_dict, z_dict)
+    p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
     pdb.set_trace()
     return p_dict, q_dict, z_dict, simplified_clauses
 
@@ -126,11 +126,11 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
 
 
 def apply_preprocessing_rules(clauses, verbose=True):
-    known_symbols = {}
+    known_expressions = {}
     counter = 0 
 
     for clause in clauses:
-        clause = simplify_clause(clause, known_symbols)
+        clause = simplify_clause(clause, known_expressions)
         if verbose and clause != 0:
             print("Current clause", counter, ":", clause)
         counter += 1
@@ -138,38 +138,38 @@ def apply_preprocessing_rules(clauses, verbose=True):
             continue
 
 
-        known_symbols = apply_z_rule_1(clause, known_symbols, verbose)
-        clause = simplify_clause(clause, known_symbols)
+        known_expressions = apply_z_rule_1(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
-        known_symbols = apply_z_rule_2(clause, known_symbols, verbose)
-        clause = simplify_clause(clause, known_symbols)
+        known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
-        known_symbols = apply_rule_1(clause, known_symbols, verbose)
-        clause = simplify_clause(clause, known_symbols)
+        known_expressions = apply_rule_1(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
-        known_symbols = apply_rule_2(clause, known_symbols, verbose)
-        clause = simplify_clause(clause, known_symbols)
+        known_expressions = apply_rule_2(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
-        known_symbols = apply_rule_3(clause, known_symbols, verbose)
-        clause = simplify_clause(clause, known_symbols)
+        known_expressions = apply_rule_3(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
-        known_symbols = apply_rules_4_and_5(clause, known_symbols, verbose)
-        clause = simplify_clause(clause, known_symbols)
+        known_expressions = apply_rules_4_and_5(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
-        known_symbols = apply_rule_of_equality(clause, known_symbols, verbose)
-        clause = simplify_clause(clause, known_symbols)
+        known_expressions = apply_rule_of_equality(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
     simplified_clauses = []
     for clause in clauses:
-        simplified_clause = simplify_clause(clause, known_symbols)
+        simplified_clause = simplify_clause(clause, known_expressions)
         # if simplified_clause != 0:
         simplified_clauses.append(simplified_clause)
 
-    return simplified_clauses, known_symbols
+    return simplified_clauses, known_expressions
 
 
-def simplify_clause(clause, known_symbols):
-    simplified_clause = clause.subs(known_symbols).expand()
+def simplify_clause(clause, known_expressions):
+    simplified_clause = clause.subs(known_expressions).expand()
     if simplified_clause.func == Add:
         factored_clause = factor(simplified_clause)
         if factored_clause.func == Mul:
@@ -183,7 +183,7 @@ def simplify_clause(clause, known_symbols):
     return simplified_clause
 
 
-def apply_z_rule_1(clause, known_symbols, verbose):
+def apply_z_rule_1(clause, known_expressions, verbose):
     # Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
     # z12 must be equal to 0, otherwise the equation can't be satisfied
     # TODO: The following equations should add the following rule z_2_3*z_1_3 = 0
@@ -215,12 +215,12 @@ def apply_z_rule_1(clause, known_symbols, verbose):
             if -coefficient > max_non_z_sum:
                 if verbose:
                     print("Z rule 1 applied!", variable, "= 0")
-                known_symbols[variable] = 0
+                known_expressions[variable] = 0
 
-    return known_symbols
+    return known_expressions
 
 
-def apply_z_rule_2(clause, known_symbols, verbose):
+def apply_z_rule_2(clause, known_expressions, verbose):
     # Example, variant A: p_1 + q_1 - 2*z_1_2 = 0
     # p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied
     # Example, variant B: p_1 + 2*q_1 - 2*z_1_2 = 0
@@ -245,7 +245,7 @@ def apply_z_rule_2(clause, known_symbols, verbose):
                 non_z_variables.append(variable)
         else:
             if z_variable is None:
-                return known_symbols
+                return known_expressions
 
         if len(clause.free_symbols) == 3:
             substitution_1 = clause.subs({non_z_variables[0]: x, non_z_variables[1]: y, z_variable: z})
@@ -256,64 +256,64 @@ def apply_z_rule_2(clause, known_symbols, verbose):
                     if verbose:
                         print("Z rule 2A applied!", non_z_variables[0], "=", non_z_variables[1])
                         print("       and        ", z_variable, "=", non_z_variables[1])
-                    known_symbols[non_z_variables[0]] = non_z_variables[1]
-                    known_symbols[z_variable] = non_z_variables[1]
+                    known_expressions[non_z_variables[0]] = non_z_variables[1]
+                    known_expressions[z_variable] = non_z_variables[1]
                 else:
                     if verbose:
                         print("Z rule 2A applied!", non_z_variables[1], "=", non_z_variables[0])
                         print("       and        ", z_variable, "=", non_z_variables[0])
-                    known_symbols[non_z_variables[1]] = non_z_variables[0]
-                    known_symbols[z_variable] = non_z_variables[0]
+                    known_expressions[non_z_variables[1]] = non_z_variables[0]
+                    known_expressions[z_variable] = non_z_variables[0]
 
             elif substitution_1 - rule_B == 0:
                 if verbose:
                     print("Z rule 2B applied!", non_z_variables[0], "=", 0)
                     print("       and        ", z_variable, "=", non_z_variables[1])
-                known_symbols[non_z_variables[0]] = 0
-                known_symbols[z_variable] = non_z_variables[1]
+                known_expressions[non_z_variables[0]] = 0
+                known_expressions[z_variable] = non_z_variables[1]
             elif substitution_2 - rule_B == 0:
                 if verbose:
                     print("Z rule 2B applied!", non_z_variables[1], "=", 0)
                     print("       and        ", z_variable, "=", non_z_variables[0])
-                known_symbols[non_z_variables[1]] = 0
-                known_symbols[z_variable] = non_z_variables[0]
+                known_expressions[non_z_variables[1]] = 0
+                known_expressions[z_variable] = non_z_variables[0]
         else:
             substitution = clause.subs({non_z_variables[0]: x, z_variable: z})
             if substitution - rule_C == 0:
                 if verbose:
                     print("Z rule 2C applied!", non_z_variables[0], "=", 1)
                     print("       and        ", z_variable, "=", 1)
-                known_symbols[non_z_variables[0]] = 1
-                known_symbols[z_variable] = 1
+                known_expressions[non_z_variables[0]] = 1
+                known_expressions[z_variable] = 1
 
-    return known_symbols
+    return known_expressions
 
 
-def apply_rule_of_equality(clause, known_symbols, verbose):
+def apply_rule_of_equality(clause, known_expressions, verbose):
     ## Basic rule of equality
     # Example: x - 1 = 0
 
     if clause.func == Symbol:
-        known_symbols[clause] = 0
+        known_expressions[clause] = 0
     elif clause.func == Mul:
         if len(clause.free_symbols) == 1:
-            known_symbols[clause.free_symbols[0]] = 0
+            known_expressions[clause.free_symbols[0]] = 0
         else:
-            known_symbols[clause] = 0
+            known_expressions[clause] = 0
         if verbose:
             print("Rule of equality applied!", clause)
     elif clause.func == Add and len(clause.args) == 2:
         # This prevents from substituting in cases where we have valid clauses like:
         # q1 - q1*q2 = 0
         if len(clause.args[0].free_symbols) == 2 or len(clause.args[1].free_symbols) == 2:
-            return known_symbols
+            return known_expressions
         if verbose:
             print("Rule of equality applied!", clause)
-        known_symbols[clause.args[1]] = -clause.args[0]
-    return known_symbols
+        known_expressions[clause.args[1]] = -clause.args[0]
+    return known_expressions
 
 
-def apply_rule_1(clause, known_symbols, verbose):
+def apply_rule_1(clause, known_expressions, verbose):
     clause_variables = list(clause.free_symbols)
     if clause.func == Add and len(clause.args)==2:
         if len(clause_variables) == 2:
@@ -324,12 +324,12 @@ def apply_rule_1(clause, known_symbols, verbose):
             if substitution - rule == 0:
                 if verbose:
                     print("Rule 1 applied!", clause)
-                known_symbols[clause_variables[0]] = 1
-                known_symbols[clause_variables[1]] = 1
-    return known_symbols
+                known_expressions[clause_variables[0]] = 1
+                known_expressions[clause_variables[1]] = 1
+    return known_expressions
 
 
-def apply_rule_2(clause, known_symbols, verbose):
+def apply_rule_2(clause, known_expressions, verbose):
     ## Rule 2:
     x = Symbol('x')
     y = Symbol('y')
@@ -341,16 +341,16 @@ def apply_rule_2(clause, known_symbols, verbose):
         if substitution - rule == 0:
             if verbose:
                 print("Rule 2 applied!", clause_variables[0], "=", 1 - clause_variables[1])
-            known_symbols[clause_variables[0] * clause_variables[1]] = 0
+            known_expressions[clause_variables[0] * clause_variables[1]] = 0
             if 'q' in str(clause_variables[1]):
-                known_symbols[clause_variables[0]] = 1 - clause_variables[1]
+                known_expressions[clause_variables[0]] = 1 - clause_variables[1]
             else:
-                known_symbols[clause_variables[1]] = 1 - clause_variables[0]
+                known_expressions[clause_variables[1]] = 1 - clause_variables[0]
 
-    return known_symbols
+    return known_expressions
 
 
-def apply_rule_3(clause, known_symbols, verbose):
+def apply_rule_3(clause, known_expressions, verbose):
     ## Rule 3:
     if clause.func == Add and len(clause.args) == 2:
         if len(clause.args[0].free_symbols) == 0:
@@ -361,17 +361,17 @@ def apply_rule_3(clause, known_symbols, verbose):
                 if constant_a > 0 or constant_b < 0:
                     if verbose:
                         print("Rule 3 applied", clause)
-                    known_symbols[symbol] = 1
-    return known_symbols
+                    known_expressions[symbol] = 1
+    return known_expressions
 
 
-def apply_rules_4_and_5(clause, known_symbols, verbose):
+def apply_rules_4_and_5(clause, known_expressions, verbose):
     ## Rule 4 & 5:
     constant = 0
     if clause.func == Mul:
         if verbose:
             print("Basic rule of x=0 applied!", clause)
-        known_symbols[clause] = 0
+        known_expressions[clause] = 0
     elif clause.func == Add:
         for part in clause.args:
             variables = list(part.free_symbols)
@@ -398,31 +398,31 @@ def apply_rules_4_and_5(clause, known_symbols, verbose):
                 if verbose:
                     print("Rule 4 applied!", clause)
                 for part in clause.args:
-                    known_symbols[part] = 0
+                    known_expressions[part] = 0
             elif constant == len(clause.args) - 1:
                 if verbose:
                     print("Rule 5 applied!", clause)
                 for part in clause.args:
-                    known_symbols[part] = 1
-    return known_symbols
+                    known_expressions[part] = 1
+    return known_expressions
 
 
-def update_dictionaries(known_symbols, p_dict, q_dict, z_dict):
-    for symbol in known_symbols:
+def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
+    for symbol in known_expressions:
         str_symbol = str(symbol)
         symbol_type = str_symbol[0]
         if '*' in str_symbol:
             continue
         if symbol_type == 'p':
             symbol_number = int(str_symbol.split('_')[1])
-            p_dict[symbol_number] = known_symbols[symbol]
+            p_dict[symbol_number] = known_expressions[symbol]
         if symbol_type == 'q':
             symbol_number = int(str_symbol.split('_')[1])
-            q_dict[symbol_number] = known_symbols[symbol]
+            q_dict[symbol_number] = known_expressions[symbol]
         if symbol_type == 'z':
             symbol_number_0 = int(str_symbol.split('_')[1])
             symbol_number_1 = int(str_symbol.split('_')[2])
-            z_dict[(symbol_number_0, symbol_number_1)] = known_symbols[symbol]
+            z_dict[(symbol_number_0, symbol_number_1)] = known_expressions[symbol]
     
     z_dict = {key:value for key, value in z_dict.items() if value != 0}
 
