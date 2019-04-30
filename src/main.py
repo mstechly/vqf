@@ -4,7 +4,9 @@ from sympy import Add
 import pdb
 
 def factor_number(m):
-    p_dict, q_dict, z_dict, clauses = create_clauses(m, apply_preprocessing=False)
+    p_dict, q_dict, z_dict, clauses = create_clauses(m, apply_preprocessing=True, verbose=False)
+    assess_number_of_unknowns(p_dict, q_dict, z_dict)
+
     if clauses[0] == 0 and len(set(clauses)) == 1:
         return decode_solution(p_dict, q_dict)
     qaoa_solution, mapping = perform_qaoa(clauses)
@@ -34,18 +36,44 @@ def decode_solution(p_dict, q_dict):
 
     return p, q
 
+def extract_unknowns(x_dict):
+    all_values = list(x_dict.values())
+    list_of_variables = []
+    for x in all_values:
+        if type(x) != int and len(x.free_symbols) != 0:
+            list_of_variables += (list(x.free_symbols))
+
+    unknowns = list(set(list_of_variables))
+    return unknowns
+
+def assess_number_of_unknowns(p_dict, q_dict, z_dict):
+    p_unknowns = extract_unknowns(p_dict)
+    q_unknowns = extract_unknowns(q_dict)
+    z_unknowns = extract_unknowns(z_dict)
+    all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
+    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
+    print("Number of unknowns:", len(all_unknowns))
+    print("Number of carry bits:", len(carry_bits))
+
+
+
 def main():
     m = 15
     # for m in [15, 21, 25, 33, 35, 39]:
-    for m in [15]:
+    # for m in [35, 77, 1207, 33667, 56153, 291311]:
+    biprimes_under_100 = [9, 15, 21, 25, 33, 35, 39, 49, 51, 55, 57, 65, 69, 77, 85, 87, 91, 93, 95]
+    for m in [35]:
+    # for m in biprimes_under_100:
+
         print("M:", m)
         if m % 2 == 0:
             p = 2
             q = int(m / 2)
             print("The primes are:", p, "and", q)
         else:
-            p, q = factor_number(m)
-            print("The primes of ",m, "are:", p, "and", q)
+            # p, q = factor_number(m)
+            factor_number(m)
+            # print("The primes of ",m, "are:", p, "and", q)
 
 if __name__ == '__main__':
     main()
