@@ -244,8 +244,14 @@ def apply_z_rule_2(clause, known_symbols, verbose):
             if verbose:
                 print("Z rule 2A applied!", non_z_variables[0], "=", non_z_variables[1])
                 print("       and        ", z_variable, "=", non_z_variables[1])
-            known_symbols[non_z_variables[0]] = non_z_variables[1]
-            known_symbols[z_variable] = non_z_variables[1]
+            
+            if 'q' in str(non_z_variables[1]):
+                known_symbols[non_z_variables[0]] = non_z_variables[1]
+                known_symbols[z_variable] = non_z_variables[1]
+            else:
+                known_symbols[non_z_variables[1]] = non_z_variables[0]
+                known_symbols[z_variable] = non_z_variables[0]
+
         elif substitution_1 - rule_B == 0:
             if verbose:
                 print("Z rule 2B applied!", non_z_variables[0], "=", 0)
@@ -307,7 +313,10 @@ def apply_rule_2(clause, known_symbols, verbose):
             if verbose:
                 print("Rule 2 applied!", clause_variables[0], "=", 1 - clause_variables[1])
             known_symbols[clause_variables[0] * clause_variables[1]] = 0
-            known_symbols[clause_variables[0]] = 1 - clause_variables[1]
+            if 'q' in str(clause_variables[1]):
+                known_symbols[clause_variables[0]] = 1 - clause_variables[1]
+            else:
+                known_symbols[clause_variables[1]] = 1 - clause_variables[0]
 
     return known_symbols
 
