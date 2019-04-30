@@ -1,5 +1,6 @@
 from preprocessing import create_clauses
 from vqf_quantum import perform_qaoa
+from sympy import Add
 import pdb
 
 def factor_number(m):
@@ -17,7 +18,9 @@ def update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict):
     for x_dict in [p_dict, q_dict, z_dict]:
         for key, value in x_dict.items():
             if str(value) in values_dict.keys():
-                x_dict[key] = values_dict[str(value)]    
+                x_dict[key] = values_dict[str(value)]
+            if type(value) == Add:
+                x_dict[key] = value.subs(values_dict)
     return p_dict, q_dict, z_dict
 
 def decode_solution(p_dict, q_dict):
