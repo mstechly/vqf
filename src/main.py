@@ -4,6 +4,8 @@ import pdb
 
 def factor_number(m):
     p_dict, q_dict, z_dict, clauses = create_clauses(m, apply_preprocessing=False)
+    if clauses[0] == 0 and len(set(clauses)) == 1:
+        return decode_solution(p_dict, q_dict)
     qaoa_solution, mapping = perform_qaoa(clauses)
     p_dict, q_dict, z_dict = update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict)
     p, q = decode_solution(p_dict, q_dict)
