@@ -39,6 +39,10 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
                 should_continue = True
             counter += 1
 
+    if verbose:
+        for clause in simplified_clauses:
+            print(clause)
+
     p_dict, q_dict, z_dict = update_dictionaries(known_symbols, p_dict, q_dict, z_dict)
     pdb.set_trace()
     return p_dict, q_dict, z_dict, simplified_clauses
@@ -154,7 +158,6 @@ def apply_preprocessing_rules(clauses, verbose=True):
 
         known_symbols = apply_rule_of_equality(clause, known_symbols, verbose)
         clause = simplify_clause(clause, known_symbols)
-
 
     simplified_clauses = []
     for clause in clauses:
