@@ -183,6 +183,8 @@ def simplify_clause(clause, known_symbols):
 def apply_z_rule_1(clause, known_symbols, verbose):
     # Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
     # z12 must be equal to 0, otherwise the equation can't be satisfied
+    # TODO: The following equations should add the following rule z_2_3*z_1_3 = 0
+    # TODO: p_1 + p_2 + p_3 + p_4 - 2*z_2_3 - 4*z_1_3 = 0
     max_non_z_sum = 0
     z_variables = {}
     for term in clause.args:
