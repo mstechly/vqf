@@ -44,7 +44,6 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
             print(clause)
 
     p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
-    pdb.set_trace()
     return p_dict, q_dict, z_dict, simplified_clauses
 
 
@@ -407,6 +406,8 @@ def apply_rules_4_and_5(clause, known_expressions, verbose):
 
 
 def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
+    all_known_expressions = {**known_expressions}
+
     for symbol in known_expressions:
         str_symbol = str(symbol)
         symbol_type = str_symbol[0]
@@ -418,11 +419,29 @@ def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
         if symbol_type == 'q':
             symbol_number = int(str_symbol.split('_')[1])
             q_dict[symbol_number] = known_expressions[symbol]
+
         if symbol_type == 'z':
             symbol_number_0 = int(str_symbol.split('_')[1])
             symbol_number_1 = int(str_symbol.split('_')[2])
             z_dict[(symbol_number_0, symbol_number_1)] = known_expressions[symbol]
-    
+
+
+
     z_dict = {key:value for key, value in z_dict.items() if value != 0}
+
+    for index, value in p_dict.items():
+        all_known_expressions[Symbol('p_' + str(index))] = value
+
+    for index, value in q_dict.items():
+        all_known_expressions[Symbol('q_' + str(index))] = value
+
+    for index, value in z_dict.items():
+        all_known_expressions[Symbol('z_' + str(index[0]) + "_" + str(index[1]))] = value
+
+    for x_dict in [p_dict, q_dict, z_dict]:
+        for index, value in x_dict.items():
+            if type(value) in [Symbol, Add, Mul]:
+                x_dict[index] = x_dict[index].subs(all_known_expressions)
+
 
     return p_dict, q_dict, z_dict
