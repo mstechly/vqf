@@ -126,12 +126,13 @@ def apply_preprocessing_rules(clauses, verbose=True):
     counter = 0 
 
     for clause in clauses:
-        if clause == 0:
-            continue
         clause = simplify_clause(clause, known_symbols)
-        if verbose:
+        if verbose and clause != 0:
             print("Current clause", counter, ":", clause)
         counter += 1
+        if clause == 0:
+            continue
+
 
         known_symbols = apply_z_rule_1(clause, known_symbols, verbose)
         clause = simplify_clause(clause, known_symbols)
@@ -269,15 +270,13 @@ def apply_z_rule_2(clause, known_symbols, verbose):
 
 
 def apply_rule_of_equality(clause, known_symbols, verbose):
+    ## Basic rule of equality
+    # Example: x - 1 = 0
 
     if clause.func == Symbol:
         known_symbols[clause] = 0
 
     if clause.func == Add and len(clause.args) == 2:
-        ## Basic rule of equality
-        # Example: x - 1 = 0
-        clause_variables = list(clause.free_symbols)
-        # if len(clause_variables) == 1:
         if verbose:
             print("Rule of equality applied!", clause)
         known_symbols[clause.args[1]] = -clause.args[0]
