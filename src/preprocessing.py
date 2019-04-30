@@ -228,7 +228,7 @@ def apply_z_rule_2(clause, known_symbols, verbose):
     variables = list(clause.free_symbols)
     z_variable = None
     non_z_variables =[]
-    if clause.func == Add and len(clause.args) == 3:
+    if clause.func == Add and len(clause.args) == 3 and len(clause.free_symbols) == 3:
         for variable in variables:
             if "z" in str(variable):
                 z_variable = variable
