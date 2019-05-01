@@ -9,7 +9,7 @@ def factor_number(m):
 
     if clauses[0] == 0 and len(set(clauses)) == 1:
         return decode_solution(p_dict, q_dict)
-    qaoa_solution, mapping = perform_qaoa(clauses)
+    qaoa_solution, mapping = perform_qaoa(clauses, steps=1, grid_size=20, visualize=True)
     p_dict, q_dict, z_dict = update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict)
     p, q = decode_solution(p_dict, q_dict)
     return p, q
@@ -24,6 +24,7 @@ def update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict):
             if type(value) == Add:
                 x_dict[key] = value.subs(values_dict)
     return p_dict, q_dict, z_dict
+
 
 def decode_solution(p_dict, q_dict):
     p = 0
@@ -71,9 +72,8 @@ def main():
             q = int(m / 2)
             print("The primes are:", p, "and", q)
         else:
-            # p, q = factor_number(m)
-            factor_number(m)
-            # print("The primes of ",m, "are:", p, "and", q)
+            p, q = factor_number(m)
+            print("The primes of ",m, "are:", p, "and", q)
 
 if __name__ == '__main__':
     main()
