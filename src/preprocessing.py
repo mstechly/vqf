@@ -187,31 +187,31 @@ def apply_z_rule_1(clause, known_expressions, verbose):
     # z12 must be equal to 0, otherwise the equation can't be satisfied
     # TODO: The following equations should add the following rule z_2_3*z_1_3 = 0
     # TODO: p_1 + p_2 + p_3 + p_4 - 2*z_2_3 - 4*z_1_3 = 0
-    max_non_z_sum = 0
+    max_positive_sum = 0
     z_variables = {}
     for term in clause.args:
         term_variables = list(term.free_symbols)
-
         if len(term_variables) == 0:
-            max_non_z_sum += term
+            max_positive_sum += term
         elif len(term_variables) == 1 and 'z' in str(term_variables[0]):
-            # We care only for z-terms with coefficient other than 1
+            if term.func == Symbol:
+                max_positive_sum += 1
             if term.func == Mul:
                 z_variables[term_variables[0]] = term.args[0]
         elif len(term_variables) == 1 and 'z' not in str(term_variables[0]):
             if term.func == Symbol:
-                max_non_z_sum += 1
+                max_positive_sum += 1
             elif term.func == Mul and term.args[0] > 0:
-                max_non_z_sum += term.args[0]
+                max_positive_sum += term.args[0]
         elif term.func == Mul:
             if len(term_variables) == len(term.args) == 2:
-                max_non_z_sum += 1
+                max_positive_sum += 1
             elif term.args[0] > 0:
-                max_non_z_sum += term.args[0]
+                max_positive_sum += term.args[0]
 
     if len(z_variables) > 0:
         for variable, coefficient in z_variables.items():
-            if -coefficient > max_non_z_sum:
+            if -coefficient > max_positive_sum:
                 if verbose:
                     print("Z rule 1 applied!", variable, "= 0")
                 known_expressions[variable] = 0
