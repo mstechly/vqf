@@ -201,12 +201,12 @@ def apply_z_rule_1(clause, known_expressions, verbose):
         elif len(term_variables) == 1 and 'z' not in str(term_variables[0]):
             if term.func == Symbol:
                 max_non_z_sum += 1
-            elif term.func == Mul:
+            elif term.func == Mul and term.args[0] > 0:
                 max_non_z_sum += term.args[0]
-        else:
-            if len(term_variables) == 2 and len(term.args) == 2:
+        elif term.func == Mul:
+            if len(term_variables) == len(term.args) == 2:
                 max_non_z_sum += 1
-            else:
+            elif term.args[0] > 0:
                 max_non_z_sum += term.args[0]
 
     if len(z_variables) > 0:
