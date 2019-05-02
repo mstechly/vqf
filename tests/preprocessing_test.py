@@ -156,3 +156,30 @@ def test_apply_rule_3():
     known_expressions = preprocessing.apply_rule_3(clause, known_expressions)
     ## Then
     assert known_expressions[q] == 1
+
+
+def test_apply_rules_4_and_5():
+    ## Given
+    known_expressions = {}
+    q_0, q_1, p_0, p_1 = symbols('q_0 q_1 p_0 p_1')
+    clause = q_0 + q_1 + p_0 + p_1
+    ## When
+    known_expressions = preprocessing.apply_rules_4_and_5(clause, known_expressions)
+    ## Then
+    assert known_expressions[q_0] == 0
+    assert known_expressions[q_1] == 0
+    assert known_expressions[p_0] == 0
+    assert known_expressions[p_1] == 0
+
+    ## Given
+    known_expressions = {}
+    q_0, q_1, p_0, p_1 = symbols('q_0 q_1 p_0 p_1')
+    clause = q_0 + q_1 + p_0 + p_1 - 4
+    ## When
+    known_expressions = preprocessing.apply_rules_4_and_5(clause, known_expressions)
+    ## Then
+    assert known_expressions[q_0] == 1
+    assert known_expressions[q_1] == 1
+    assert known_expressions[p_0] == 1
+    assert known_expressions[p_1] == 1
+
