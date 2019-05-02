@@ -332,7 +332,20 @@ def apply_rule_of_equality(clause, known_expressions, verbose=False):
     if clause.func == Symbol:
         known_expressions[clause] = 0
     elif clause.func == Add and len(clause.args) == 2:
-        known_expressions[clause.args[1]] = -clause.args[0]
+        if isinstance(clause.args[0], Number):
+            known_expressions[clause.args[1]] = -clause.args[0]
+        elif isinstance(clause.args[1], Number):
+            known_expressions[clause.args[0]] = -clause.args[1]
+        else:
+            if 'q' in str(clause.args[0]):
+                non_q_index = 1
+            else:
+                non_q_index = 0
+            if '-' in str(clause.args[1 - non_q_index]):
+                known_expressions[clause.args[non_q_index]] = -clause.args[1 - non_q_index]
+            else:
+                known_expressions[-clause.args[non_q_index]] = clause.args[1 - non_q_index]
+
     elif clause.func == Mul:
         if len(clause.free_symbols) == 1:
             known_expressions[list(clause.free_symbols)[0]] = 0
