@@ -88,41 +88,41 @@ def test_apply_z_rule_2():
 def test_apply_rule_of_equality():
     ## Given
     known_expressions = {}
-    x = symbols('x')
-    clause = x - 1
+    q = symbols('q')
+    clause = q - 1
     ## When
     known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
     ## Then
-    assert known_expressions[x] == 1
+    assert known_expressions[q] == 1
 
     ## Given
     known_expressions = {}
-    x = symbols('x')
-    clause = x
+    q = symbols('q')
+    clause = q
     ## When
     known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
     ## Then
-    assert known_expressions[x] == 0
+    assert known_expressions[q] == 0
 
     ## Given
     known_expressions = {}
-    x, y = symbols('x y')
-    clause = x*y - 1
+    p, q = symbols('p q')
+    clause = p*q - 1
     ## When
     known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
     ## Then
-    assert known_expressions[x*y] == 1
+    assert known_expressions[p*q] == 1
 
 def test_apply_rule_1():
     ## Given
     known_expressions = {}
-    x, y = symbols('x y')
-    clause = x * y - 1
+    p, q = symbols('p q')
+    clause = p * q - 1
     ## When
     known_expressions = preprocessing.apply_rule_1(clause, known_expressions)
     ## Then
-    assert known_expressions[x] == 1
-    assert known_expressions[y] == 1
+    assert known_expressions[p] == 1
+    assert known_expressions[q] == 1
 
 
 def test_apply_rule_2():
