@@ -446,7 +446,8 @@ def apply_rules_4_and_5(clause, known_expressions, verbose=False):
                 if verbose:
                     print("Rule 5 applied!", clause)
                 for part in clause.args:
-                    known_expressions[part] = 1
+                    if part != constant:
+                        known_expressions[part] = 1
     return known_expressions
 
 

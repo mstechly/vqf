@@ -198,3 +198,13 @@ def test_apply_rules_4_and_5():
     assert known_expressions[p_0] == 1
     assert known_expressions[p_1] == 1
 
+    ## Given
+    known_expressions = {}
+    q = symbols('q')
+    clause = q - 1
+    ## When
+    known_expressions = preprocessing.apply_rules_4_and_5(clause, known_expressions)
+    ## Then
+    assert known_expressions[q] == 1
+    assert len(known_expressions) == 1
+
