@@ -113,6 +113,16 @@ def test_apply_rule_of_equality():
     ## Then
     assert known_expressions[p*q] == 1
 
+    ## Given
+    known_expressions = {}
+    p, q = symbols('p q')
+    clause = p*q
+    ## When
+    known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
+    ## Then
+    assert known_expressions[p*q] == 0
+
+
 def test_apply_rule_1():
     ## Given
     known_expressions = {}
