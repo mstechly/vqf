@@ -1,5 +1,6 @@
 import numpy as np
-from sympy import Symbol, Add, Mul, Pow, factor
+from sympy import Symbol, Add, Mul, Pow
+from sympy import factor, srepr
 import pdb
 
 def create_clauses(m_int, apply_preprocessing=True, verbose=True):
@@ -186,6 +187,11 @@ def simplify_clause(clause, known_expressions):
 
         # Simplifies x**2 -> x, since the variables we use are binary.
         for term in simplified_clause.args:
+            if term.func == Mul and 'Pow' in srepr(term):
+                for subterm in term.args:
+                    if subterm.func == Pow:
+                        simplified_clause = simplified_clause.subs({subterm: subterm.args[0]})
+
             if term.func == Pow:
                 simplified_clause = simplified_clause - term + term.args[0]
     return simplified_clause
