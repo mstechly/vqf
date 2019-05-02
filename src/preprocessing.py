@@ -39,12 +39,28 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
                 should_continue = True
             counter += 1
 
-    if verbose:
-        for clause in simplified_clauses:
-            print(clause)
 
     p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
-    return p_dict, q_dict, z_dict, simplified_clauses
+    
+    known_symbols = {}
+    for index, value in p_dict.items():
+        known_symbols[Symbol('p_' + str(index))] = value
+
+    for index, value in q_dict.items():
+        known_symbols[Symbol('q_' + str(index))] = value
+
+    for index, value in z_dict.items():
+        known_symbols[Symbol('z_' + str(index[0]) + "_" + str(index[1]))] = value
+
+    final_clauses = []
+    for clause in clauses:
+        final_clauses.append(simplify_clause(clause, known_symbols))
+
+    if verbose:
+        for clause in final_clauses:
+            print(clause)
+
+    return p_dict, q_dict, z_dict, final_clauses
 
 
 def create_initial_dicts(m_int):
@@ -425,9 +441,6 @@ def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
             symbol_number_1 = int(str_symbol.split('_')[2])
             z_dict[(symbol_number_0, symbol_number_1)] = known_expressions[symbol]
 
-
-
-    z_dict = {key:value for key, value in z_dict.items() if value != 0}
 
     for index, value in p_dict.items():
         all_known_expressions[Symbol('p_' + str(index))] = value
