@@ -50,6 +50,8 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
     for clause in clauses:
         final_clauses.append(simplify_clause(clause, known_symbols))
 
+    z_dict = {key:value for key, value in z_dict.items() if value != 0}
+
     if verbose:
         for clause in final_clauses:
             print(clause)
