@@ -313,10 +313,6 @@ def apply_rule_of_equality(clause, known_expressions, verbose=False):
         if verbose:
             print("Rule of equality applied!", clause)
     elif clause.func == Add and len(clause.args) == 2:
-        # This prevents from substituting in cases where we have valid clauses like:
-        # q1 - q1*q2 = 0
-        if len(clause.args[0].free_symbols) == 2 or len(clause.args[1].free_symbols) == 2:
-            return known_expressions
         if verbose:
             print("Rule of equality applied!", clause)
         known_expressions[clause.args[1]] = -clause.args[0]
