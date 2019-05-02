@@ -1,5 +1,5 @@
 import numpy as np
-from sympy import Symbol, Add, Mul, Pow
+from sympy import Symbol, Add, Mul, Pow, Number
 from sympy import factor, srepr
 import pdb
 
@@ -150,9 +150,6 @@ def apply_preprocessing_rules(clauses, verbose=True):
         known_expressions = apply_z_rule_1(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
 
-        known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
-        clause = simplify_clause(clause, known_expressions)
-
         known_expressions = apply_rule_1(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
 
@@ -167,6 +164,10 @@ def apply_preprocessing_rules(clauses, verbose=True):
 
         known_expressions = apply_rule_of_equality(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
+
+        known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
+
 
     simplified_clauses = []
     for clause in clauses:
@@ -241,64 +242,86 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
     # p1 must be equal to 0 and z_1_2 to q_1, otherwise the equation can't be satisfied
     # Example, variant C: p_1 + 1 - 2*z_1_2 = 0
     # p1 must be equal to 1 and z_1_2 to 1, otherwise the equation can't be satisfied
-
-    x = Symbol('x')
-    y = Symbol('y')
-    z = Symbol('z')
-    rule_A = x + y - 2*z
-    rule_B = x + 2*y - 2*z
-    rule_C = x + 1 - 2*z
-    variables = list(clause.free_symbols)
-    z_variable = None
-    non_z_variables =[]
-    if clause.func == Add and len(clause.args) == 3:
-        for variable in variables:
-            if "z" in str(variable):
-                z_variable = variable
-            else:
-                non_z_variables.append(variable)
-        else:
-            if z_variable is None:
-                return known_expressions
-
-        if len(clause.free_symbols) == 3:
-            substitution_1 = clause.subs({non_z_variables[0]: x, non_z_variables[1]: y, z_variable: z})
-            substitution_2 = clause.subs({non_z_variables[1]: x, non_z_variables[0]: y, z_variable: z})
-
-            if substitution_1 - rule_A == 0:
-                if 'q' in str(non_z_variables[1]):
-                    if verbose:
-                        print("Z rule 2A applied!", non_z_variables[0], "=", non_z_variables[1])
-                        print("       and        ", z_variable, "=", non_z_variables[1])
-                    known_expressions[non_z_variables[0]] = non_z_variables[1]
-                    known_expressions[z_variable] = non_z_variables[1]
+    new_known_expressions = {}
+    even_positive_terms = []
+    even_negative_terms = []
+    odd_terms = []
+    if clause.func == Add:
+        for term in clause.args:
+            if term.func == Symbol:
+                odd_terms.append(term)
+            if isinstance(term, Number):
+                if term % 2 == 0 and term > 0:
+                    even_positive_terms.append(term)
+                elif term % 2 == 0 and term < 0:
+                    even_negative_terms.append(term)
                 else:
-                    if verbose:
-                        print("Z rule 2A applied!", non_z_variables[1], "=", non_z_variables[0])
-                        print("       and        ", z_variable, "=", non_z_variables[0])
-                    known_expressions[non_z_variables[1]] = non_z_variables[0]
-                    known_expressions[z_variable] = non_z_variables[0]
+                    odd_terms.append(term)
+            if term.func == Mul:
+                first_argument = term.args[0]
+                if isinstance(first_argument, Number):
+                    if first_argument % 2 == 0 and first_argument > 0:
+                        even_positive_terms.append(term)
+                    elif first_argument % 2 == 0 and first_argument < 0:
+                        even_negative_terms.append(term)
+                    else:
+                        odd_terms.append(term)
+                else:
+                    odd_terms.append(term)
 
-            elif substitution_1 - rule_B == 0:
-                if verbose:
-                    print("Z rule 2B applied!", non_z_variables[0], "=", 0)
-                    print("       and        ", z_variable, "=", non_z_variables[1])
-                known_expressions[non_z_variables[0]] = 0
-                known_expressions[z_variable] = non_z_variables[1]
-            elif substitution_2 - rule_B == 0:
-                if verbose:
-                    print("Z rule 2B applied!", non_z_variables[1], "=", 0)
-                    print("       and        ", z_variable, "=", non_z_variables[0])
-                known_expressions[non_z_variables[1]] = 0
-                known_expressions[z_variable] = non_z_variables[0]
+
+    if len(odd_terms) == 1:
+        if type(odd_terms[0]) == Symbol:
+            new_known_expressions[odd_terms[0]] = 0
+        elif type(odd_terms[0]) == Mul:
+            for arg in odd_terms[0].args:
+                if not isinstance(arg, Number):
+                    new_known_expressions[arg] = 0
         else:
-            substitution = clause.subs({non_z_variables[0]: x, z_variable: z})
-            if substitution - rule_C == 0:
-                if verbose:
-                    print("Z rule 2C applied!", non_z_variables[0], "=", 1)
-                    print("       and        ", z_variable, "=", 1)
-                known_expressions[non_z_variables[0]] = 1
-                known_expressions[z_variable] = 1
+            print("TODO: Z rule 2: don't know this type!")
+            pdb.set_trace()
+
+    if len(odd_terms) == 2:
+        non_number_index = None
+        if isinstance(odd_terms[0], Number):
+            non_number_index = 1
+        elif isinstance(odd_terms[1], Number):
+            non_number_index = 0
+        if non_number_index is not None:
+            term = odd_terms[non_number_index]
+            if type(term) == Symbol:
+                new_known_expressions[term] = 1
+            elif type(term) == Mul:
+                for arg in term.args:
+                    if not isinstance(arg, Number):
+                        new_known_expressions[arg] = 1
+            else:
+                print("TODO: Z rule 2: don't know this type!")
+                pdb.set_trace()
+        else:
+            if 'q' in str(odd_terms[0]):
+                non_q_index = 1
+            else:
+                non_q_index = 0
+
+            new_known_expressions[odd_terms[non_q_index]] = odd_terms[1 - non_q_index]
+            if len(even_negative_terms) == 1:
+                term = even_negative_terms[0]
+                if isinstance(term, Number):
+                    print("TODO: I don't think this happens at all")
+                    pdb.set_trace()
+                elif type(term) == Mul:
+                    term = term / term.args[0]
+                    new_known_expressions[term] = odd_terms[1 - non_q_index]
+                else:
+                    print("TODO: Z rule 2: don't know this type!")
+                    pdb.set_trace()
+
+    if len(new_known_expressions) != 0:
+        known_expressions = {**known_expressions, **new_known_expressions}
+        if verbose:
+            print("Z rule 2 applied:", new_known_expressions)
+
 
     return known_expressions
 
