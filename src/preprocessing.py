@@ -176,18 +176,12 @@ def apply_preprocessing_rules(clauses, verbose=True):
         simplified_clause = simplify_clause(clause, known_expressions)
         # if simplified_clause != 0:
         simplified_clauses.append(simplified_clause)
-
     return simplified_clauses, known_expressions
 
 
 def simplify_clause(clause, known_expressions):
     simplified_clause = clause.subs(known_expressions).expand()
     if simplified_clause.func == Add:
-        factored_clause = factor(simplified_clause)
-        if factored_clause.func == Mul:
-            if len(factored_clause.args[0].free_symbols) == 0:
-                simplified_clause = simplified_clause / factored_clause.args[0]
-
         # Simplifies x**2 -> x, since the variables we use are binary.
         for term in simplified_clause.args:
             if term.func == Mul and 'Pow' in srepr(term):
@@ -197,6 +191,12 @@ def simplify_clause(clause, known_expressions):
 
             if term.func == Pow:
                 simplified_clause = simplified_clause - term + term.args[0]
+
+        factored_clause = factor(simplified_clause)
+        if factored_clause.func == Mul:
+            if isinstance(factored_clause.args[0], Number):
+                simplified_clause = simplified_clause / factored_clause.args[0]
+
     return simplified_clause
 
 
