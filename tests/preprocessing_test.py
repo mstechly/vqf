@@ -112,3 +112,14 @@ def test_apply_rule_of_equality():
     known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
     ## Then
     assert known_expressions[x*y] == 1
+
+def test_apply_rule_1():
+    ## Given
+    known_expressions = {}
+    x, y = symbols('x y')
+    clause = x * y - 1
+    ## When
+    known_expressions = preprocessing.apply_rule_1(clause, known_expressions)
+    ## Then
+    assert known_expressions[x] == 1
+    assert known_expressions[y] == 1
