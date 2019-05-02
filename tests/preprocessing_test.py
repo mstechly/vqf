@@ -123,3 +123,19 @@ def test_apply_rule_1():
     ## Then
     assert known_expressions[x] == 1
     assert known_expressions[y] == 1
+
+
+def test_apply_rule_2():
+    ## Given
+    known_expressions = {}
+    p, q = symbols('p q')
+    clause = p + q - 1
+    ## When
+    known_expressions = preprocessing.apply_rule_2(clause, known_expressions)
+    ## Then
+    assert known_expressions[p*q] == 0
+    assert known_expressions[p] == 1 - q
+
+    ## Then
+    assert known_expressions[p*q] == 0
+    assert known_expressions[p] == 1 - q
