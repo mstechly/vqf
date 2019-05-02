@@ -42,15 +42,8 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
 
     p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
     
-    known_symbols = {}
-    for index, value in p_dict.items():
-        known_symbols[Symbol('p_' + str(index))] = value
 
-    for index, value in q_dict.items():
-        known_symbols[Symbol('q_' + str(index))] = value
-
-    for index, value in z_dict.items():
-        known_symbols[Symbol('z_' + str(index[0]) + "_" + str(index[1]))] = value
+    known_symbols = create_known_symbols_dict(p_dict, q_dict, z_dict)
 
     final_clauses = []
     for clause in clauses:
@@ -434,14 +427,8 @@ def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
             z_dict[(symbol_number_0, symbol_number_1)] = known_expressions[symbol]
 
 
-    for index, value in p_dict.items():
-        all_known_expressions[Symbol('p_' + str(index))] = value
-
-    for index, value in q_dict.items():
-        all_known_expressions[Symbol('q_' + str(index))] = value
-
-    for index, value in z_dict.items():
-        all_known_expressions[Symbol('z_' + str(index[0]) + "_" + str(index[1]))] = value
+    known_symbols = create_known_symbols_dict(p_dict, q_dict, z_dict)
+    all_known_expressions = {**all_known_expressions, **known_symbols}
 
     for x_dict in [p_dict, q_dict, z_dict]:
         for index, value in x_dict.items():
@@ -450,3 +437,15 @@ def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
 
 
     return p_dict, q_dict, z_dict
+
+def create_known_symbols_dict(p_dict, q_dict, z_dict):
+    known_symbols = {}
+    for index, value in p_dict.items():
+        known_symbols[Symbol('p_' + str(index))] = value
+
+    for index, value in q_dict.items():
+        known_symbols[Symbol('q_' + str(index))] = value
+
+    for index, value in z_dict.items():
+        known_symbols[Symbol('z_' + str(index[0]) + "_" + str(index[1]))] = value
+    return known_symbols
