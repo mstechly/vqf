@@ -198,7 +198,7 @@ def simplify_clause(clause, known_expressions):
     return simplified_clause
 
 
-def apply_z_rule_1(clause, known_expressions, verbose):
+def apply_z_rule_1(clause, known_expressions, verbose=False):
     # Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
     # z12 must be equal to 0, otherwise the equation can't be satisfied
     # TODO: The following equations should add the following rule z_2_3*z_1_3 = 0
@@ -235,7 +235,7 @@ def apply_z_rule_1(clause, known_expressions, verbose):
     return known_expressions
 
 
-def apply_z_rule_2(clause, known_expressions, verbose):
+def apply_z_rule_2(clause, known_expressions, verbose=False):
     # Example, variant A: p_1 + q_1 - 2*z_1_2 = 0
     # p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied
     # Example, variant B: p_1 + 2*q_1 - 2*z_1_2 = 0
@@ -304,7 +304,7 @@ def apply_z_rule_2(clause, known_expressions, verbose):
     return known_expressions
 
 
-def apply_rule_of_equality(clause, known_expressions, verbose):
+def apply_rule_of_equality(clause, known_expressions, verbose=False):
     ## Basic rule of equality
     # Example: x - 1 = 0
 
@@ -323,7 +323,7 @@ def apply_rule_of_equality(clause, known_expressions, verbose):
     return known_expressions
 
 
-def apply_rule_1(clause, known_expressions, verbose):
+def apply_rule_1(clause, known_expressions, verbose=False):
     clause_variables = list(clause.free_symbols)
     if clause.func == Add and len(clause.args)==2:
         if len(clause_variables) == 2:
@@ -339,7 +339,7 @@ def apply_rule_1(clause, known_expressions, verbose):
     return known_expressions
 
 
-def apply_rule_2(clause, known_expressions, verbose):
+def apply_rule_2(clause, known_expressions, verbose=False):
     ## Rule 2:
     x = Symbol('x')
     y = Symbol('y')
@@ -360,7 +360,7 @@ def apply_rule_2(clause, known_expressions, verbose):
     return known_expressions
 
 
-def apply_rule_3(clause, known_expressions, verbose):
+def apply_rule_3(clause, known_expressions, verbose=False):
     ## Rule 3:
     if clause.func == Add and len(clause.args) == 2:
         if len(clause.args[0].free_symbols) == 0:
@@ -375,7 +375,7 @@ def apply_rule_3(clause, known_expressions, verbose):
     return known_expressions
 
 
-def apply_rules_4_and_5(clause, known_expressions, verbose):
+def apply_rules_4_and_5(clause, known_expressions, verbose=False):
     ## Rule 4 & 5:
     constant = 0
     if clause.func == Mul:
