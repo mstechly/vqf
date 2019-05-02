@@ -307,15 +307,19 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
 def apply_rule_of_equality(clause, known_expressions, verbose=False):
     ## Basic rule of equality
     # Example: x - 1 = 0
-
     if clause.func == Symbol:
         known_expressions[clause] = 0
-        if verbose:
-            print("Rule of equality applied!", clause)
     elif clause.func == Add and len(clause.args) == 2:
-        if verbose:
-            print("Rule of equality applied!", clause)
         known_expressions[clause.args[1]] = -clause.args[0]
+    elif clause.func == Mul:
+        if len(clause.free_symbols) == 1:
+            known_expressions[list(clause.free_symbols)[0]] = 0
+        else:
+            known_expressions[clause] = 0
+    else:
+        return known_expressions
+    if verbose:
+        print("Rule of equality applied!", clause)
     return known_expressions
 
 
@@ -374,15 +378,7 @@ def apply_rule_3(clause, known_expressions, verbose=False):
 def apply_rules_4_and_5(clause, known_expressions, verbose=False):
     ## Rule 4 & 5:
     constant = 0
-    if clause.func == Mul:
-        if len(clause.free_symbols) == 1:
-            known_expressions[list(clause.free_symbols)[0]] = 0
-        else:
-            known_expressions[clause] = 0
-        if verbose:
-            print("Basic rule of x=0 applied!", clause)
-        known_expressions[clause] = 0
-    elif clause.func == Add:
+    if clause.func == Add:
         for part in clause.args:
             variables = list(part.free_symbols)
 
