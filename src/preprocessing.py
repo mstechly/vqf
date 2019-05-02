@@ -319,6 +319,27 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
                     print("TODO: Z rule 2: don't know this type!")
                     pdb.set_trace()
 
+    if len(odd_terms) == 3:
+        number_index = None
+        if isinstance(odd_terms[0], Number):
+            number_index = 0
+        elif isinstance(odd_terms[1], Number):
+            number_index = 1
+        elif isinstance(odd_terms[2], Number):
+            number_index = 2
+        if number_index is not None:
+            indices = [0, 1, 2]
+            indices.remove(number_index)
+            new_term = odd_terms[indices[0]] * odd_terms[indices[1]]
+            if isinstance(new_term.args[0], Number):
+                new_term = new_term / new_term.args[0]
+            if 'Pow' in srepr(new_term):
+                new_term = simplify_clause(new_term, {})
+            new_known_expressions[new_term] = 0
+            
+
+ 
+
     if len(new_known_expressions) != 0:
         known_expressions = {**known_expressions, **new_known_expressions}
         if verbose:
