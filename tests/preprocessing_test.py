@@ -83,3 +83,32 @@ def test_apply_z_rule_2():
     ## Then
     assert known_expressions[z] == 1
     assert known_expressions[q] == 1
+
+
+def test_apply_rule_of_equality():
+    ## Given
+    known_expressions = {}
+    x = symbols('x')
+    clause = x - 1
+    ## When
+    known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
+    ## Then
+    assert known_expressions[x] == 1
+
+    ## Given
+    known_expressions = {}
+    x = symbols('x')
+    clause = x
+    ## When
+    known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
+    ## Then
+    assert known_expressions[x] == 0
+
+    ## Given
+    known_expressions = {}
+    x, y = symbols('x y')
+    clause = x*y - 1
+    ## When
+    known_expressions = preprocessing.apply_rule_of_equality(clause, known_expressions)
+    ## Then
+    assert known_expressions[x*y] == 1
