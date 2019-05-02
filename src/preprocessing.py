@@ -405,7 +405,7 @@ def apply_rules_4_and_5(clause, known_expressions, verbose=False):
                     print("Rule 4 applied!", clause)
                 for part in clause.args:
                     known_expressions[part] = 0
-            elif constant == len(clause.args) - 1:
+            elif constant == -(len(clause.args) - 1):
                 if verbose:
                     print("Rule 5 applied!", clause)
                 for part in clause.args:
