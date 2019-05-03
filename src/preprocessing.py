@@ -1,21 +1,21 @@
 import numpy as np
 from sympy import Symbol, Add, Mul, Pow, Number
-from sympy import factor, srepr
+from sympy import factor, srepr, sympify
 import pdb
 
-def create_clauses(m_int, apply_preprocessing=True, verbose=True):
+def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=True, verbose=True):
     """
     Creates clauses for the VQF algorithm.
     """
 
-    m_dict, p_dict, q_dict, z_dict = create_initial_dicts(m_int)
+    m_dict, p_dict, q_dict, z_dict = create_initial_dicts(m_int, true_p_int, true_q_int)
     if apply_preprocessing:
         q_dict[0] = 1
         p_dict[0] = 1
         if len(q_dict) == 2:
             q_dict[1] = 1
-
     clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing)
+
     known_expressions = {}
     simplified_clauses = clauses
 
@@ -59,7 +59,7 @@ def create_clauses(m_int, apply_preprocessing=True, verbose=True):
     return p_dict, q_dict, z_dict, final_clauses
 
 
-def create_initial_dicts(m_int):
+def create_initial_dicts(m_int, true_p_int=None, true_q_int=None):
     m_binary = bin(m_int)[2:][::-1]
 
     m_dict = {}
@@ -68,16 +68,34 @@ def create_initial_dicts(m_int):
         m_dict[i] = int(item)
 
     p_dict = {}
-    n_p = len(m_dict)
+    if true_p_int is None:
+        n_p = len(m_dict)
+    else:
+        true_p_binary = bin(true_p_int)[2:][::-1]
+        n_p = len(true_p_binary)
+
+    if true_q_int is None:
+        n_q = int(np.ceil(len(m_dict)/2))
+    else:
+        true_q_binary = bin(true_q_int)[2:][::-1]
+        n_q = len(true_q_binary)
+
+
     for i in range(n_p):
         p_dict[i] = Symbol('p_'+str(i))
 
+    if true_p_int is not None:
+        p_dict[n_p-1] = 1
+
     q_dict = {}
-    n_q = int(np.ceil(len(m_dict)/2))
     for i in range(n_q):
         q_dict[i] = Symbol('q_'+str(i))
 
-    n_c = n_p + n_q - 1
+    if true_q_int is not None:
+        q_dict[n_q-1] = 1
+
+
+    n_c = len(m_dict) + int(np.ceil(len(m_dict)/2)) - 1
 
     z_dict = {}
     for i in range(n_c):
@@ -97,40 +115,46 @@ def create_initial_dicts(m_int):
 
 def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=True):
     clauses = []
-    n_c = len(p_dict) + len(q_dict) - 1
+    n_c = len(m_dict) + int(np.ceil(len(m_dict)/2)) - 1
     for i in range(n_c):
         clause = 0
         for j in range(i+1):
             clause += q_dict.get(j, 0) * p_dict.get(i-j, 0)
-
         clause += -m_dict.get(i, 0)
 
         for j in range(i+1):
             clause += z_dict.get((j, i), 0)
-        if apply_preprocessing:
+        if apply_preprocessing and clause != 0:
             # This part exists in order to limit the number of z terms.
-            if type(clause) == int:
-                continue
-
+            max_sum = 0
             if clause.func == Mul:
                 max_sum = 1
             elif clause.func == Add:
-                max_sum = len(clause.args) - m_dict.get(i, 0)
+                for term in clause.args:
+                    if isinstance(term, Number):
+                        max_sum += int(term)
+                    elif term.func == Symbol:
+                        max_sum += 1
+                    elif term.func == Mul:
+                        if isinstance(term.args[0], Number) and term.args[0] > 0:
+                            max_sum += int(term.args[0])
+                        else:
+                            max_sum += 1
             elif clause.func == Symbol:
                 max_sum = 1
-
 
             if max_sum != 0:
                 max_carry = int(np.floor(np.log2(max_sum)))
             else:
                 max_carry = 0
-
             for j in range(i + max_carry + 1, n_c):
                 if z_dict.get((i, j), 0) != 0:
                     z_dict[(i, j)] = 0
         
         for j in range(1, n_c):
             clause += - 2**j * z_dict.get((i, i+j), 0)
+        if clause == 0:
+            clause = sympify(clause)
         clauses.append(clause)
 
     return clauses
@@ -174,7 +198,6 @@ def apply_preprocessing_rules(clauses, verbose=True):
     simplified_clauses = []
     for clause in clauses:
         simplified_clause = simplify_clause(clause, known_expressions)
-        # if simplified_clause != 0:
         simplified_clauses.append(simplified_clause)
     return simplified_clauses, known_expressions
 

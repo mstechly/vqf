@@ -3,8 +3,8 @@ from vqf_quantum import perform_qaoa
 from sympy import Add
 import pdb
 
-def factor_number(m):
-    p_dict, q_dict, z_dict, clauses = create_clauses(m, apply_preprocessing=True, verbose=False)
+def factor_number(m, true_p=None, true_q=None):
+    p_dict, q_dict, z_dict, clauses = create_clauses(m, true_p, true_q, apply_preprocessing=True, verbose=True)
     assess_number_of_unknowns(p_dict, q_dict, z_dict)
 
     if clauses[0] == 0 and len(set(clauses)) == 1:
@@ -59,12 +59,16 @@ def assess_number_of_unknowns(p_dict, q_dict, z_dict):
 
 
 def main():
-    m = 15
-    # for m in [15, 21, 25, 33, 35, 39]:
     # for m in [35, 77, 1207, 33667, 56153, 291311]:
-    biprimes_under_100 = [9, 15, 21, 25, 33, 35, 39, 49, 51, 55, 57, 65, 69, 77, 85, 87, 91, 93, 95]
-    for m in [35]:
-    # for m in biprimes_under_100:
+    p_q_m_list = [[7, 5, 35], [11, 7, 77], [71, 17, 1207], [241, 233, 56153], [257, 131, 33667], [557,523, 291311]]
+    # for m in [35]:
+    # p_q_m_list = [[7, 3, 21]]
+    # p_q_m_list = [[71, 17, 1207]]
+
+    for p_q_m in p_q_m_list:
+        true_p = p_q_m[0]
+        true_q = p_q_m[1]
+        m = p_q_m[2]
 
         print("M:", m)
         if m % 2 == 0:
@@ -72,8 +76,9 @@ def main():
             q = int(m / 2)
             print("The primes are:", p, "and", q)
         else:
-            p, q = factor_number(m)
-            print("The primes of ",m, "are:", p, "and", q)
+            p, q = factor_number(m, true_p, true_q)
+            print("Calculated primes of ",m, "are:", p, "and", q)
+            print("      True primes of ",m, "are:", true_p, "and", true_q)
 
 if __name__ == '__main__':
     main()
