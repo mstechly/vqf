@@ -128,27 +128,8 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
             clause = sympify(clause)
         if apply_preprocessing and clause != 0:
             # This part exists in order to limit the number of z terms.
-            max_sum = 0
-            if clause.func == Mul:
-                if isinstance(clause.args[0], Number) and clause.args[0] > 0:
-                    max_sum += int(clause.args[0])
-                else:
-                    max_sum += 1
-            elif clause.func == Add:
-                for term in clause.args:
-                    if isinstance(term, Number):
-                        max_sum += int(term)
-                    elif term.func == Symbol:
-                        max_sum += 1
-                    elif term.func == Mul:
-                        if isinstance(term.args[0], Number) and term.args[0] > 0:
-                            max_sum += int(term.args[0])
-                        else:
-                            max_sum += 1
-            elif clause.func == Symbol:
-                max_sum = 1
-            elif isinstance(clause, Number):
-                max_sum += int(clause)
+            max_sum = get_max_sum_from_clause(clause)
+
 
             if max_sum != 0:
                 max_carry = int(np.floor(np.log2(max_sum)))
@@ -166,6 +147,32 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
 
     return clauses
 
+def get_max_sum_from_clause(clause):
+    max_sum = 0
+    if clause.func == Mul:
+        if isinstance(clause.args[0], Number) and clause.args[0] > 0:
+            max_sum += int(clause.args[0])
+        else:
+            max_sum += 1
+    elif clause.func == Add:
+        for term in clause.args:
+            if isinstance(term, Number):
+                max_sum += int(term)
+            elif term.func == Symbol:
+                max_sum += 1
+            elif term.func == Mul:
+                if isinstance(term.args[0], Number) and term.args[0] > 0:
+                    max_sum += int(term.args[0])
+                elif isinstance(term.args[0], Number) and term.args[0] < 0:
+                    pass
+                else:
+                    max_sum += 1
+
+    elif clause.func == Symbol:
+        max_sum = 1
+    elif isinstance(clause, Number):
+        max_sum += int(clause)
+    return max_sum
 
 def apply_preprocessing_rules(clauses, verbose=True):
     known_expressions = {}
@@ -235,31 +242,17 @@ def apply_z_rule_1(clause, known_expressions, verbose=False):
     # z12 must be equal to 0, otherwise the equation can't be satisfied
     # TODO: The following equations should add the following rule z_2_3*z_1_3 = 0
     # TODO: p_1 + p_2 + p_3 + p_4 - 2*z_2_3 - 4*z_1_3 = 0
-    max_positive_sum = 0
-    z_variables = {}
-    for term in clause.args:
-        term_variables = list(term.free_symbols)
-        if len(term_variables) == 0:
-            max_positive_sum += term
-        elif len(term_variables) == 1 and 'z' in str(term_variables[0]):
-            if term.func == Symbol:
-                max_positive_sum += 1
-            if term.func == Mul:
-                z_variables[term_variables[0]] = term.args[0]
-        elif len(term_variables) == 1 and 'z' not in str(term_variables[0]):
-            if term.func == Symbol:
-                max_positive_sum += 1
-            elif term.func == Mul and term.args[0] > 0:
-                max_positive_sum += term.args[0]
-        elif term.func == Mul:
-            if len(term_variables) == len(term.args) == 2:
-                max_positive_sum += 1
-            elif term.args[0] > 0:
-                max_positive_sum += term.args[0]
+    max_sum = get_max_sum_from_clause(clause)
 
-    if len(z_variables) > 0:
-        for variable, coefficient in z_variables.items():
-            if -coefficient > max_positive_sum:
+    negative_terms = []
+    for term in clause.args:
+        if term.func == Mul and isinstance(term.args[0], Number) and term.args[0] < 0:
+            negative_terms.append(term)
+
+    if len(negative_terms) > 0:
+        for term in negative_terms:
+            if -term.args[0] > max_sum:
+                variable = term / term.args[0]
                 if verbose:
                     print("Z rule 1 applied!", variable, "= 0")
                 known_expressions[variable] = 0
