@@ -464,38 +464,38 @@ def apply_rules_4_and_5(clause, known_expressions, verbose=False):
     ## Rule 4 & 5:
     constant = 0
     if clause.func == Add:
-        for part in clause.args:
-            variables = list(part.free_symbols)
+        for term in clause.args:
+            variables = list(term.free_symbols)
 
             if len(variables) == 0:
-                constant += part
+                constant += term
 
             elif len(variables) == 1:
                 # This means, that the coefficient is equal to 1
-                if part.func == Symbol:
+                if term.func == Symbol:
                     continue
-                if part.args[0] == variables[0] and part.args[1] != 0:
+                if term.args[0] == variables[0] and term.args[1] != 0:
                     break
-                elif part.args[1] == variables[0] and part.args[0] != 0:
+                elif term.args[1] == variables[0] and term.args[0] != 0:
                     break
 
             elif len(variables) == 2:
                 # This means there is a coefficient other than 1
-                if len(part.args) != 2:
+                if len(term.args) != 2:
                     break
 
         else:
             if constant == 0:
                 if verbose:
                     print("Rule 4 applied!", clause)
-                for part in clause.args:
-                    known_expressions[part] = 0
+                for term in clause.args:
+                    known_expressions[term] = 0
             elif constant == -(len(clause.args) - 1):
                 if verbose:
                     print("Rule 5 applied!", clause)
-                for part in clause.args:
-                    if part != constant:
-                        known_expressions[part] = 1
+                for term in clause.args:
+                    if term != constant:
+                        known_expressions[term] = 1
     return known_expressions
 
 
