@@ -1,18 +1,21 @@
-from preprocessing import create_clauses
+from preprocessing import create_clauses, assess_number_of_unknowns
 from vqf_quantum import perform_qaoa
 from sympy import Add
 import pdb
 
 def factor_number(m, true_p=None, true_q=None):
-    p_dict, q_dict, z_dict, clauses = create_clauses(m, true_p, true_q, apply_preprocessing=True, verbose=True)
-    assess_number_of_unknowns(p_dict, q_dict, z_dict)
-
+    p_dict, q_dict, z_dict, clauses = create_clauses(m, true_p, true_q, apply_preprocessing=True, verbose=False)
+    number_of_uknowns, number_of_carry_bits = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+    
     if clauses[0] == 0 and len(set(clauses)) == 1:
-        return decode_solution(p_dict, q_dict)
-    qaoa_solution, mapping = perform_qaoa(clauses, steps=1, grid_size=20, visualize=True)
+        if number_of_uknowns == 0:
+            return decode_solution(p_dict, q_dict)
+
+    qaoa_solution, mapping = perform_qaoa(clauses, steps=2, grid_size=5, visualize=True)
     p_dict, q_dict, z_dict = update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict)
     p, q = decode_solution(p_dict, q_dict)
     return p, q
+
 
 def update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict):
     values_dict = {symbol_str: qaoa_solution[index] for symbol_str, index in mapping.items()}
@@ -37,33 +40,10 @@ def decode_solution(p_dict, q_dict):
 
     return p, q
 
-def extract_unknowns(x_dict):
-    all_values = list(x_dict.values())
-    list_of_variables = []
-    for x in all_values:
-        if type(x) != int and len(x.free_symbols) != 0:
-            list_of_variables += (list(x.free_symbols))
-
-    unknowns = list(set(list_of_variables))
-    return unknowns
-
-def assess_number_of_unknowns(p_dict, q_dict, z_dict):
-    p_unknowns = extract_unknowns(p_dict)
-    q_unknowns = extract_unknowns(q_dict)
-    z_unknowns = extract_unknowns(z_dict)
-    all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
-    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
-    print("Number of unknowns:", len(all_unknowns))
-    print("Number of carry bits:", len(carry_bits))
-
 
 
 def main():
-    # for m in [35, 77, 1207, 33667, 56153, 291311]:
-    p_q_m_list = [[7, 5, 35], [11, 7, 77], [71, 17, 1207], [241, 233, 56153], [257, 131, 33667], [557,523, 291311]]
-    # for m in [35]:
-    # p_q_m_list = [[7, 3, 21]]
-    # p_q_m_list = [[71, 17, 1207]]
+    p_q_m_list = [[7, 5, 35], [11, 7, 77], [71, 17, 1207], [257, 131, 33667], [241, 233, 56153], [557,523, 291311]]
 
     for p_q_m in p_q_m_list:
         true_p = p_q_m[0]

@@ -50,11 +50,18 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
     for clause in clauses:
         final_clauses.append(simplify_clause(clause, known_symbols))
 
+
     z_dict = {key:value for key, value in z_dict.items() if value != 0}
 
     if verbose:
         for clause in final_clauses:
             print(clause)
+
+
+    if final_clauses[0] == 0 and len(set(final_clauses)) == 1:
+        number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+        if number_of_unknowns != 0:
+            p_dict, q_dict = solve_symmetric_case(p_dict, q_dict)
 
     return p_dict, q_dict, z_dict, final_clauses
 
@@ -147,6 +154,7 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
 
     return clauses
 
+
 def get_max_sum_from_clause(clause):
     max_sum = 0
     if clause.func == Mul:
@@ -173,6 +181,18 @@ def get_max_sum_from_clause(clause):
     elif isinstance(clause, Number):
         max_sum += int(clause)
     return max_sum
+
+
+def solve_symmetric_case(p_dict, q_dict):
+    if len(p_dict) != len(q_dict):
+        raise Exception("No clauses and no symmetry - something went wrong")
+    print("Solving potentially symmetric case")
+    for key in p_dict.keys():
+            if type(p_dict[key]) != int or type(q_dict[key]) != int:
+                if p_dict[key] + q_dict[key] == 1:
+                    p_dict[key] = 1
+                    q_dict[key] = 0
+    return p_dict, q_dict
 
 def apply_preprocessing_rules(clauses, verbose=True):
     known_expressions = {}
@@ -547,3 +567,25 @@ def create_known_symbols_dict(p_dict, q_dict, z_dict):
     for index, value in z_dict.items():
         known_symbols[Symbol('z_' + str(index[0]) + "_" + str(index[1]))] = value
     return known_symbols
+
+
+def extract_unknowns(x_dict):
+    all_values = list(x_dict.values())
+    list_of_variables = []
+    for x in all_values:
+        if type(x) != int and len(x.free_symbols) != 0:
+            list_of_variables += (list(x.free_symbols))
+
+    unknowns = list(set(list_of_variables))
+    return unknowns
+
+
+def assess_number_of_unknowns(p_dict, q_dict, z_dict):
+    p_unknowns = extract_unknowns(p_dict)
+    q_unknowns = extract_unknowns(q_dict)
+    z_unknowns = extract_unknowns(z_dict)
+    all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
+    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
+    print("Number of unknowns:", len(all_unknowns))
+    print("Number of carry bits:", len(carry_bits))
+    return len(all_unknowns), len(carry_bits)
