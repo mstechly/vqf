@@ -16,54 +16,67 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
             q_dict[1] = 1
     clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing)
 
-    known_expressions = {}
-    simplified_clauses = clauses
 
     if apply_preprocessing:
-        counter = 0
-        should_continue = True
-        while should_continue:
-            if verbose:
-                print("Preprocessing iteration:", counter)
-
-            new_simplified_clauses, new_known_expressions = apply_preprocessing_rules(simplified_clauses, verbose)
-            for new_clause, old_clause in zip(new_simplified_clauses, simplified_clauses):
-                if new_clause != old_clause:
-                    break
-            else:
-                should_continue = False
-
-            simplified_clauses = new_simplified_clauses
-            known_expressions = {**known_expressions, **new_known_expressions}
-
-            if counter == 0:
-                should_continue = True
-            counter += 1
-
-
-    p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
+        simplified_clauses, known_expressions = run_simplification_loop(clauses, verbose)
+        p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
     
-
     known_symbols = create_known_symbols_dict(p_dict, q_dict, z_dict)
 
     final_clauses = []
     for clause in clauses:
         final_clauses.append(simplify_clause(clause, known_symbols))
 
-
     z_dict = {key:value for key, value in z_dict.items() if value != 0}
+
+    # TODO: In principle this might need to be recurrent
+    if apply_preprocessing and final_clauses[0] == 0 and len(set(final_clauses)) == 1:
+        number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+        if number_of_unknowns != 0:
+            p_dict, q_dict = solve_symmetric_case(p_dict, q_dict)
+            number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+            if number_of_unknowns != 0:
+                final_clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing)
+                final_clauses, known_expressions = run_simplification_loop(final_clauses, verbose)
+                p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
+
+    if final_clauses[0] == 0 and len(set(final_clauses)) == 1:
+        number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+        if number_of_unknowns != 0:
+            raise Exception("This probably means this code still needs some polishing :(")
 
     if verbose:
         for clause in final_clauses:
             print(clause)
 
 
-    if final_clauses[0] == 0 and len(set(final_clauses)) == 1:
-        number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
-        if number_of_unknowns != 0:
-            p_dict, q_dict = solve_symmetric_case(p_dict, q_dict)
-
     return p_dict, q_dict, z_dict, final_clauses
+
+
+def run_simplification_loop(clauses, verbose):
+    known_expressions = {}
+    counter = 0
+    should_continue = True
+    simplified_clauses = clauses
+    while should_continue:
+        if verbose:
+            print("Preprocessing iteration:", counter)
+
+        new_simplified_clauses, new_known_expressions = apply_preprocessing_rules(simplified_clauses, verbose)
+        for new_clause, old_clause in zip(new_simplified_clauses, simplified_clauses):
+            if new_clause != old_clause:
+                break
+        else:
+            should_continue = False
+
+        simplified_clauses = new_simplified_clauses
+        known_expressions = {**known_expressions, **new_known_expressions}
+
+        if counter == 0:
+            should_continue = True
+        counter += 1
+
+    return simplified_clauses, known_expressions
 
 
 def create_initial_dicts(m_int, true_p_int=None, true_q_int=None):
@@ -185,8 +198,8 @@ def get_max_sum_from_clause(clause):
 
 def solve_symmetric_case(p_dict, q_dict):
     if len(p_dict) != len(q_dict):
-        raise Exception("No clauses and no symmetry - something went wrong")
-    print("Solving potentially symmetric case")
+        return p_dict, q_dict
+
     for key in p_dict.keys():
             if type(p_dict[key]) != int or type(q_dict[key]) != int:
                 if p_dict[key] + q_dict[key] == 1:
