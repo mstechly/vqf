@@ -130,7 +130,10 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
             # This part exists in order to limit the number of z terms.
             max_sum = 0
             if clause.func == Mul:
-                max_sum = 1
+                if isinstance(clause.args[0], Number) and clause.args[0] > 0:
+                    max_sum += int(clause.args[0])
+                else:
+                    max_sum += 1
             elif clause.func == Add:
                 for term in clause.args:
                     if isinstance(term, Number):
