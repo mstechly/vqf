@@ -321,8 +321,14 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
                     if not isinstance(arg, Number):
                         new_known_expressions[arg] = 1
             else:
-                print("TODO: Z rule 2: don't know this type!")
-                pdb.set_trace()
+                # TODO: Example of clause which results in this case:
+                # 2*q_2 + z_4_6 + z_5_6 - 4
+                # (p=23, q=23, m=529)
+                # This should be handled by rule 5
+                # print("TODO: Z rule 2: don't know this type!")
+                # pdb.set_trace()
+                pass
+
         else:
             if 'q' in str(odd_terms[0]):
                 non_q_index = 1
@@ -333,8 +339,11 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
             if len(even_negative_terms) == 1:
                 term = even_negative_terms[0]
                 if isinstance(term, Number):
-                    print("TODO: I don't think this happens at all")
-                    pdb.set_trace()
+                    # TODO: Example of clause which results in this case:
+                    # q_2 + z_5_6 + 2*z_7_8 - 2
+                    # (p=29, q=23, m=667)
+                    # pdb.set_trace()
+                    pass
                 elif type(term) == Mul:
                     term = term / term.args[0]
                     new_known_expressions[term] = odd_terms[1 - non_q_index]
