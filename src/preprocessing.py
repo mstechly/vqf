@@ -124,6 +124,8 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
 
         for j in range(i+1):
             clause += z_dict.get((j, i), 0)
+        if type(clause) == int:
+            clause = sympify(clause)
         if apply_preprocessing and clause != 0:
             # This part exists in order to limit the number of z terms.
             max_sum = 0
@@ -142,6 +144,8 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
                             max_sum += 1
             elif clause.func == Symbol:
                 max_sum = 1
+            elif isinstance(clause, Number):
+                max_sum += int(clause)
 
             if max_sum != 0:
                 max_carry = int(np.floor(np.log2(max_sum)))
