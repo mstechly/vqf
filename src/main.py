@@ -6,10 +6,17 @@ import pdb
 def factor_number(m, true_p=None, true_q=None):
     p_dict, q_dict, z_dict, clauses = create_clauses(m, true_p, true_q, apply_preprocessing=True, verbose=False)
     number_of_uknowns, number_of_carry_bits = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+    print("Number of unknowns:", number_of_uknowns)
+    print("Number of carry bits:", number_of_carry_bits)
     
     if clauses[0] == 0 and len(set(clauses)) == 1:
         if number_of_uknowns == 0:
             return decode_solution(p_dict, q_dict)
+        else:
+            # TODO
+            print("No clauses and existing unknowns - must be solved manually")
+            return None, None
+
 
     qaoa_solution, mapping = perform_qaoa(clauses, steps=2, grid_size=5, visualize=True)
     p_dict, q_dict, z_dict = update_dictionaries(qaoa_solution, mapping, p_dict, q_dict, z_dict)

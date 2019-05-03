@@ -586,6 +586,4 @@ def assess_number_of_unknowns(p_dict, q_dict, z_dict):
     z_unknowns = extract_unknowns(z_dict)
     all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
     carry_bits = [value for value in z_unknowns if 'z' in str(value)]
-    print("Number of unknowns:", len(all_unknowns))
-    print("Number of carry bits:", len(carry_bits))
     return len(all_unknowns), len(carry_bits)
