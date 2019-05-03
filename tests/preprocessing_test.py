@@ -100,6 +100,16 @@ def test_apply_z_rule_2():
     ## Then
     assert known_expressions[q_0*p_0] == 0
 
+    # This expression is currently not supported
+    # ## Given
+    # known_expressions = {}
+    # q_0, p_0, z_0 = symbols('q_0 p_0 z_0')
+    # clause = q_0 + p_0 + 2*z_0 - 2
+    # ## When
+    # known_expressions = preprocessing.apply_z_rule_2(clause, known_expressions)
+    # ## Then
+    # assert known_expressions[p_0] == q_0
+    # assert known_expressions[z_0] == 1 - q_0
 
 
 def test_apply_rule_of_equality():
@@ -219,3 +229,14 @@ def test_apply_rules_4_and_5():
     assert known_expressions[q] == 1
     assert len(known_expressions) == 1
 
+    # This expression is currently not supported
+    # ## Given
+    # known_expressions = {}
+    # q_0, q_1, q_2 = symbols('q_0 q_1 q_2')
+    # clause = 2*q_0 + q_1 + q_2 - 4
+    # ## When
+    # known_expressions = preprocessing.apply_rules_4_and_5(clause, known_expressions)
+    # ## Then
+    # assert known_expressions[q_0] == 1
+    # assert known_expressions[q_1] == 1
+    # assert known_expressions[q_2] == 1
