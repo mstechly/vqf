@@ -45,6 +45,10 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
         if number_of_unknowns != 0:
             raise Exception("This probably means this code still needs some polishing :(")
 
+    for clause in final_clauses:
+        if isinstance(clause, Number) and clause != 0:
+            raise Exception("Clause is a number and is not equal to 0!")
+
     if verbose:
         for clause in final_clauses:
             print(clause)
@@ -206,6 +210,7 @@ def solve_symmetric_case(p_dict, q_dict):
                     p_dict[key] = 1
                     q_dict[key] = 0
     return p_dict, q_dict
+
 
 def apply_preprocessing_rules(clauses, verbose=True):
     known_expressions = {}
@@ -568,6 +573,7 @@ def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
 
 
     return p_dict, q_dict, z_dict
+
 
 def create_known_symbols_dict(p_dict, q_dict, z_dict):
     known_symbols = {}
