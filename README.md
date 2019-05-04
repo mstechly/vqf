@@ -6,6 +6,10 @@ This repository contains implementation of the algorithm presented in the articl
 
 The notation in the code refers directly to the notation in the paper.
 
+### Warning
+
+For some reason, the preprocessing is not deterministic. Running the same case sporadically leads to getting different results. It seems to come from the fact, that there is some randomness inside sympy when it comes to ordering operations. Hence, preprocessing sometimes assigns `x=y` and sometimes `y=x`, which leads to different expressions after substition. From the mathematical point of view it doesn't matter, but from the practical - it does. Since set of implemented rules is incomplete, different substitution may occasionally lead to form which this algorithm cannot simplify. This effect diminished over time of development - i.e. improving rules and fixing bugs.
+
 ## Differences from the paper
 
 Below you can find a list of points where I'm aware that my implementation differs from the one provided in the paper.
