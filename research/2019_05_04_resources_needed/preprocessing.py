@@ -267,10 +267,16 @@ def simplify_clause(clause, known_expressions):
             if term.func == Pow:
                 simplified_clause = simplified_clause - term + term.args[0]
 
-        factored_clause = factor(simplified_clause)
-        if factored_clause.func == Mul:
-            if isinstance(factored_clause.args[0], Number):
-                simplified_clause = simplified_clause / factored_clause.args[0]
+        # factor() is very resource-heavy - this intends to limit its usage.
+        # It gives even 20x speedup for large numbers!
+        for term in simplified_clause.args:
+            if term.func != Mul:
+                break
+        else:
+            factored_clause = factor(simplified_clause)
+            if factored_clause.func == Mul:
+                if isinstance(factored_clause.args[0], Number):
+                    simplified_clause = simplified_clause / factored_clause.args[0]
 
     return simplified_clause
 
