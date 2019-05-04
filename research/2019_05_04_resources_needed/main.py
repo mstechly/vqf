@@ -4,21 +4,25 @@ import numpy as np
 import time
 import inspect, os, sys
 
-# Hacky logic for importing module from other dirs
-file_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
-project_dir = os.path.join(file_dir.split('vqf')[0], 'vqf')
-src_dir = os.path.join(project_dir, 'src')
-sys.path.append(src_dir)
+# Uncomment if you want to import preprocessing from src directory
+# You need to delete "preprocessing.py" file from this directory to make it work, though.
+# file_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
+# project_dir = os.path.join(file_dir.split('vqf')[0], 'vqf')
+# src_dir = os.path.join(project_dir, 'src')
+# sys.path.append(src_dir)
+# from preprocessing import create_clauses, assess_number_of_unknowns
 from preprocessing import create_clauses, assess_number_of_unknowns
 
 def main():
-    threshold = 1e3
+    threshold = 1e5
     primes = get_primes_lower_than_n(int(threshold))
     primes = primes[1:]
 
     qubits_required_no_preprocessing = []
     qubits_required_with_preprocessing = []
     initial_time = time.time()
+    file_name = "preprocessing_results.csv"
+    plot_name = "preprocessing_plot.png"
     for p in primes:
         for q in primes:
             if p < q:
@@ -35,9 +39,13 @@ def main():
             p_dict, q_dict, z_dict, _ = create_clauses(m, p, q, apply_preprocessing=True, verbose=False)
             x, z = assess_number_of_unknowns(p_dict, q_dict, z_dict)
             qubits_required_with_preprocessing.append([m, x])
+
             end_time = time.time()
             t = np.round(end_time - start_time, 3)
-            print(p, q, m, t, "    ", end="\r")
+            print(p, q, m, x, z, t, "    ", end="\r")
+
+        np.savetxt(file_name, np.array(qubits_required_with_preprocessing), delimiter=",", fmt='%.d', header='unknowns,carry_bits', comments='')
+
 
     print("Total time:", np.round((end_time - initial_time) / 60, 3), '[min]')
 
@@ -53,8 +61,9 @@ def main():
     ax.set_ylabel("Number of qubit required")
     ax.set_xscale('log')
     plt.legend()
-
+    plt.savefig(plot_name)
     plt.show()
+
 
 def get_primes_lower_than_n(n):
     # Source: https://hackernoon.com/prime-numbers-using-python-824ff4b3ea19
@@ -72,6 +81,7 @@ def get_primes_lower_than_n(n):
             primes.append(possiblePrime)
 
     return primes
+
 
 if __name__ == '__main__':
     main()
