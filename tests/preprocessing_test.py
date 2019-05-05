@@ -100,6 +100,26 @@ def test_apply_z_rule_2():
     ## Then
     assert known_expressions[q_0*p_0] == 0
 
+    ## Given
+    known_expressions = {}
+    q_0, p_0, z_0 = symbols('q_0 p_0 z_0')
+    clause = q_0 + p_0 - 2*z_0 + 2
+    ## When
+    known_expressions = preprocessing.apply_z_rule_2(clause, known_expressions)
+    ## Then
+    assert known_expressions[p_0] == q_0
+    assert len(known_expressions) == 1
+
+    ## Given
+    known_expressions = {}
+    q_0, p_0, z_0 = symbols('q_0 p_0 z_0')
+    clause = q_0 - p_0 - 2*z_0 + 2
+    ## When
+    known_expressions = preprocessing.apply_z_rule_2(clause, known_expressions)
+    ## Then
+    assert known_expressions[p_0] == q_0
+
+
     # This expression is currently not supported
     # ## Given
     # known_expressions = {}

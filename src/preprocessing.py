@@ -270,7 +270,9 @@ def simplify_clause(clause, known_expressions):
         # factor() is very resource-heavy - this intends to limit its usage.
         # It gives even 20x speedup for large numbers!
         for term in simplified_clause.args:
-            if term.func != Mul:
+            if term.func == Mul or isinstance(term, Number):
+                continue
+            else:
                 break
         else:
             factored_clause = factor(simplified_clause)
@@ -305,12 +307,9 @@ def apply_z_rule_1(clause, known_expressions, verbose=False):
 
 
 def apply_z_rule_2(clause, known_expressions, verbose=False):
-    # Example, variant A: p_1 + q_1 - 2*z_1_2 = 0
-    # p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied
-    # Example, variant B: p_1 + 2*q_1 - 2*z_1_2 = 0
-    # p1 must be equal to 0 and z_1_2 to q_1, otherwise the equation can't be satisfied
-    # Example, variant C: p_1 + 1 - 2*z_1_2 = 0
-    # p1 must be equal to 1 and z_1_2 to 1, otherwise the equation can't be satisfied
+    # Example: p_1 + q_1 - 2*z_1_2 = 0
+    # p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied.
+    # For more examples please refer to tests.
     new_known_expressions = {}
     even_positive_terms = []
     even_negative_terms = []
@@ -337,7 +336,6 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
                         odd_terms.append(term)
                 else:
                     odd_terms.append(term)
-
 
     if len(odd_terms) == 1:
         if type(odd_terms[0]) == Symbol:
@@ -378,8 +376,18 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
                 non_q_index = 1
             else:
                 non_q_index = 0
+            odd_term_0 = odd_terms[1 - non_q_index]
+            odd_term_1 = odd_terms[non_q_index]
 
-            new_known_expressions[odd_terms[non_q_index]] = odd_terms[1 - non_q_index]
+            if type(odd_term_0) == Mul:
+                if isinstance(odd_term_0.args[0], Number) and odd_term_0.args[0] < 0:
+                    odd_term_0 = -odd_term_0
+            elif type(odd_term_1) == Mul:
+                if isinstance(odd_term_1.args[0], Number) and odd_term_1.args[0] < 0:
+                    odd_term_1 = -odd_term_1
+
+            new_known_expressions[odd_term_1] = odd_term_0
+
             if len(even_negative_terms) == 1:
                 term = even_negative_terms[0]
                 if isinstance(term, Number):
@@ -389,8 +397,12 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
                     # pdb.set_trace()
                     pass
                 elif type(term) == Mul:
-                    term = term / term.args[0]
-                    new_known_expressions[term] = odd_terms[1 - non_q_index]
+                    if len(even_positive_terms) == 0:
+                        term = term / term.args[0]
+                        new_known_expressions[term] = odd_term_0
+                    else:
+                        pass
+                        # pdb.set_trace()
                 else:
                     print("TODO: Z rule 2: don't know this type!")
                     pdb.set_trace()
