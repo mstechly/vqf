@@ -341,9 +341,10 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
         if type(odd_terms[0]) == Symbol:
             new_known_expressions[odd_terms[0]] = 0
         elif type(odd_terms[0]) == Mul:
-            for arg in odd_terms[0].args:
-                if not isinstance(arg, Number):
-                    new_known_expressions[arg] = 0
+            term = odd_terms[0]
+            if isinstance(term.args[0], Number):
+                term = term / term.args[0]
+            new_known_expressions[term] = 0
         else:
             print("TODO: Z rule 2: don't know this type!")
             pdb.set_trace()
