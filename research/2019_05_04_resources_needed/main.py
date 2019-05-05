@@ -15,7 +15,7 @@ from preprocessing import create_clauses, assess_number_of_unknowns
 
 def main():
     threshold = 1e5
-    primes = get_primes_lower_than_n(int(threshold))
+    primes = get_primes_lower_than_n(int(np.sqrt(threshold)))
     primes = primes[1:]
 
     qubits_required_no_preprocessing = []
@@ -34,17 +34,17 @@ def main():
             p_dict, q_dict, z_dict, _ = create_clauses(m, p, q, apply_preprocessing=False, verbose=False)
             x, z = assess_number_of_unknowns(p_dict, q_dict, z_dict)
 
-            qubits_required_no_preprocessing.append([m, x])
+            qubits_required_no_preprocessing.append([m, x, z])
 
             p_dict, q_dict, z_dict, _ = create_clauses(m, p, q, apply_preprocessing=True, verbose=False)
             x, z = assess_number_of_unknowns(p_dict, q_dict, z_dict)
-            qubits_required_with_preprocessing.append([m, x])
+            qubits_required_with_preprocessing.append([m, x, z])
 
             end_time = time.time()
             t = np.round(end_time - start_time, 3)
             print(p, q, m, x, z, t, "    ", end="\r")
 
-        np.savetxt(file_name, np.array(qubits_required_with_preprocessing), delimiter=",", fmt='%.d', header='unknowns,carry_bits', comments='')
+        np.savetxt(file_name, np.array(qubits_required_with_preprocessing), delimiter=",", fmt='%.d', header='m,unknowns,carry_bits', comments='')
 
 
     print("Total time:", np.round((end_time - initial_time) / 60, 3), '[min]')
@@ -55,8 +55,8 @@ def main():
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
 
-    ax.scatter(data_1[:, 0], data_1[:, 1], label="No classical preprocessing")
-    ax.scatter(data_2[:, 0], data_2[:, 1], label="Classical preprocessing")
+    ax.scatter(data_1[:, 0], data_1[:, 1], label="No classical preprocessing", s=10)
+    ax.scatter(data_2[:, 0], data_2[:, 1], label="Classical preprocessing", s=10)
     ax.set_xlabel("Biprime to be factored")
     ax.set_ylabel("Number of qubit required")
     ax.set_xscale('log')
