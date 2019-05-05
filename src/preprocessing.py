@@ -382,7 +382,7 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
             if type(odd_term_0) == Mul:
                 if isinstance(odd_term_0.args[0], Number) and odd_term_0.args[0] < 0:
                     odd_term_0 = -odd_term_0
-            elif type(odd_term_1) == Mul:
+            if type(odd_term_1) == Mul:
                 if isinstance(odd_term_1.args[0], Number) and odd_term_1.args[0] < 0:
                     odd_term_1 = -odd_term_1
 
