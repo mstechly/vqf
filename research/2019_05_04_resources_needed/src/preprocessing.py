@@ -243,8 +243,8 @@ def apply_preprocessing_rules(clauses, verbose=True):
         known_expressions = apply_rule_of_equality(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
 
-        known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
-        clause = simplify_clause(clause, known_expressions)
+        # known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
+        # clause = simplify_clause(clause, known_expressions)
 
 
     simplified_clauses = []
