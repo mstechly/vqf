@@ -377,17 +377,19 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
                 non_q_index = 1
             else:
                 non_q_index = 0
-            odd_term_0 = odd_terms[1 - non_q_index]
-            odd_term_1 = odd_terms[non_q_index]
+            variable_0 = odd_terms[1 - non_q_index]
+            variable_1 = odd_terms[non_q_index]
 
-            if type(odd_term_0) == Mul:
-                if isinstance(odd_term_0.args[0], Number) and odd_term_0.args[0] < 0:
-                    odd_term_0 = -odd_term_0
-            if type(odd_term_1) == Mul:
-                if isinstance(odd_term_1.args[0], Number) and odd_term_1.args[0] < 0:
-                    odd_term_1 = -odd_term_1
+            if type(variable_0) == Mul:
+                if isinstance(variable_0.args[0], Number):
+                    variable_0 = variable_0/variable_0.args[0]
 
-            new_known_expressions[odd_term_1] = odd_term_0
+            if type(variable_1) == Mul:
+                if isinstance(variable_1.args[0], Number):
+                    variable_1 = variable_1/variable_1.args[0]
+
+
+            new_known_expressions[variable_1] = variable_0
 
             if len(even_negative_terms) == 1:
                 term = even_negative_terms[0]
@@ -400,7 +402,7 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
                 elif type(term) == Mul:
                     if len(even_positive_terms) == 0:
                         term = term / term.args[0]
-                        new_known_expressions[term] = odd_term_0
+                        new_known_expressions[term] = variable_0
                     else:
                         pass
                         # pdb.set_trace()
