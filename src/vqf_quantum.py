@@ -41,7 +41,8 @@ def perform_qaoa(clauses, steps=1, grid_size=None, visualize=True):
 
     if grid_size is None:
         grid_size = len(clauses) + len(qubits)
-    betas, gammas = grid_search_angles(qaoa_inst, grid_size, visualize)
+    # betas, gammas = grid_search_angles(qaoa_inst, grid_size, visualize)
+    betas, gammas = step_by_step_grid_search_angles(qaoa_inst, grid_size=grid_size, max_step=steps)
     qaoa_inst.betas = betas
     qaoa_inst.gammas = gammas
     betas, gammas = qaoa_inst.get_angles()
@@ -157,3 +158,50 @@ def grid_search_angles(qaoa_inst, grid_size=5, visualize=False):
             plot_variance_landscape(all_betas, all_gammas, np.array(all_energies))
 
     return best_betas, best_gammas
+
+
+def step_by_step_grid_search_angles(qaoa_inst, grid_size=5, max_step=3, visualize=False):
+    qaoa_inst.betas = np.array([])
+    qaoa_inst.gammas = np.array([])
+    best_betas = np.array([])
+    best_gammas = np.array([])
+    for current_steps in range(1, max_step+1):
+        print("step:", current_steps, "\n")
+        beta, gamma = one_step_grid_search(qaoa_inst, current_steps, grid_size)
+        best_betas = np.append(best_betas, beta)
+        best_gammas = np.append(best_gammas, gamma)
+        qaoa_inst.betas = best_betas
+        qaoa_inst.gammas = best_gammas
+
+    return best_betas, best_gammas
+
+def one_step_grid_search(qaoa_inst, current_steps, grid_size):
+    qaoa_inst.steps = current_steps
+    best_beta = None
+    best_gamma = None
+    best_energy = np.inf
+
+
+    fixed_betas = qaoa_inst.betas
+    fixed_gammas = qaoa_inst.gammas
+    beta_range = np.linspace(0, np.pi, grid_size)
+    gamma_range = np.linspace(0, 2*np.pi, grid_size)
+
+    vqe = VQE(qaoa_inst.minimizer, minimizer_args=qaoa_inst.minimizer_args,
+                  minimizer_kwargs=qaoa_inst.minimizer_kwargs)
+    cost_hamiltonian = reduce(lambda x, y: x + y, qaoa_inst.cost_ham)
+    for beta in beta_range:
+        for gamma in gamma_range:
+            betas = np.append(fixed_betas, beta)
+            gammas = np.append(fixed_gammas, gamma)
+            stacked_params = np.hstack((betas, gammas))
+            program = qaoa_inst.get_parameterized_program()
+            energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, qaoa_inst.qvm)
+            print(beta, gamma, end="\r")
+            if energy < best_energy:
+                best_energy = energy
+                best_beta = beta
+                best_gamma = gamma
+
+    return best_beta, best_gamma
+
