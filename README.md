@@ -37,5 +37,5 @@ For some reason, the preprocessing is not deterministic. Running the same case s
 
 I do not claim that the preprocessing part is perfect, though from manual inspection it seems to be working in most cases. Below are some known bugs.
 
-- Current version of code doesn't produce correct results for number 1465 (factors: 293 and 5). This doesn't happen always (see note about randomness above)
+- Current version of code doesn't produce correct results for number 1465 (factors: 293 and 5). This doesn't happen always (see note about randomness above).
 - There are still some additional rules to add / cases to fix (see TODO in `preprocessing.py`).
