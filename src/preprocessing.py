@@ -3,9 +3,63 @@ from sympy import Symbol, Add, Mul, Pow, Number
 from sympy import factor, srepr, sympify
 import pdb
 
+"""
+This is script for preprocessing part of the VQF algorithm.
+Notation used here refers to section IIA and IIB from the VQF article (see readme).
+I specific equation is refered, it's equation from the paper.
+
+Since the same variables are being used throughout the whole script, 
+I've decided to write their description here to avoid redundancy.
+
+** Arguments **
+verbose 
+Boolean flag.
+If True, information about the execution will be printed to the console.
+
+m_dict, p_dict, q_dict
+Dictionaries representing numbers m, p and q.
+Keys are indices of the bits.
+Values are integers (0 or 1) or sympy expressions representing the variables (see eq. 1).
+
+z_dict
+Dictionary representing carry bits.
+Keys are tuples of integers, where the first one is a starting bit and the second one is a target bit.
+Values are the same as in case of p_dict and q_dict.
+
+clauses
+A list of clauses corresponding to the equations (2) and (3). 
+They are represented as sympy expressions.
+
+known_expressions
+A dictionary of expressions which has been deducted from the clauses.
+Keys are sympy expressions, either simple ones (e.g.: q_0), which represent single unknowns,
+or more complex (e.g.: p_1*q_1). 
+Values are either sympy expressions or integers (0 or 1).
+
+
+"""
+
+
 def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=True, verbose=True):
     """
     Creates clauses for the VQF algorithm.
+
+    If true_p_int or true_q_int are provided, algorithm treats their length as known.
+    This also means that it sets the leading bits to 1.
+    It returns dictionaries, which represent p, q and carry bits, and a list of clauses. 
+    For p and q keys represent the bit index, for carry bits, between which bits carrying occurs.
+    Clauses are sympy expressions which represent the optimization problem.
+
+    Args:
+        m_int (int): number to be factored, as an integer.
+        true_p_int (int, optional): p - first factor, as an integer. Default: None.
+        true_p_int (int, optional): q - second factor, as an integer. Default: None.
+        apply_preprocessing (bool, optional): If True, the preprocessing will be applied. Default: True
+        verbose (bool, optional): See module documentation at the top.
+
+    Returns:
+        p_dict, q_dict, z_dict: See module documentation at the top.
+        final_clauses (list): See 'clauses' in module documentation at the top.
     """
 
     m_dict, p_dict, q_dict, z_dict = create_initial_dicts(m_int, true_p_int, true_q_int)
@@ -18,7 +72,7 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
 
 
     if apply_preprocessing:
-        simplified_clauses, known_expressions = run_simplification_loop(clauses, verbose)
+        simplified_clauses, known_expressions = simplify_clauses(clauses, verbose)
         p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
     
     known_symbols = create_known_symbols_dict(p_dict, q_dict, z_dict)
@@ -29,21 +83,22 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
 
     z_dict = {key:value for key, value in z_dict.items() if value != 0}
 
-    # TODO: In principle this might need to be recurrent
+    # TODO: In principle this should be recurrent / in while loop.
     if apply_preprocessing and final_clauses[0] == 0 and len(set(final_clauses)) == 1:
-        number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+        number_of_unknowns, _ = calculate_number_of_unknowns(p_dict, q_dict, z_dict)
         if number_of_unknowns != 0:
-            p_dict, q_dict = solve_symmetric_case(p_dict, q_dict)
-            number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+            p_dict, q_dict = simplify_symmetric_case(p_dict, q_dict)
+            number_of_unknowns, _ = calculate_number_of_unknowns(p_dict, q_dict, z_dict)
             if number_of_unknowns != 0:
                 final_clauses = create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing)
-                final_clauses, known_expressions = run_simplification_loop(final_clauses, verbose)
+                final_clauses, known_expressions = simplify_clauses(final_clauses, verbose)
                 p_dict, q_dict, z_dict = update_dictionaries(known_expressions, p_dict, q_dict, z_dict)
 
     if final_clauses[0] == 0 and len(set(final_clauses)) == 1:
-        number_of_unknowns, _ = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+        number_of_unknowns, _ = calculate_number_of_unknowns(p_dict, q_dict, z_dict)
         if number_of_unknowns != 0:
-            raise Exception("This probably means this code still needs some polishing :(")
+            # This should be fixed after implementation of the TODO above.
+            raise Exception("All clauses equal to 0, but unknowns still exist.")
 
     for clause in final_clauses:
         if isinstance(clause, Number) and clause != 0:
@@ -57,7 +112,19 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
     return p_dict, q_dict, z_dict, final_clauses
 
 
-def run_simplification_loop(clauses, verbose):
+def simplify_clauses(clauses, verbose=True):
+    """
+    Performs simplification of clauses.
+
+    Args:
+        clauses (list): See module documentation at the top.
+        verbose (bool, optional): See module documentation at the top.
+
+    Returns:
+        simplified_clauses (list): See 'clauses' in module documentation at the top.
+        known_expressions (dict): See module documentation at the top.
+    """
+
     known_expressions = {}
     counter = 0
     should_continue = True
@@ -84,6 +151,21 @@ def run_simplification_loop(clauses, verbose):
 
 
 def create_initial_dicts(m_int, true_p_int=None, true_q_int=None):
+    """
+    Creates dictionaries representing m, p and q.
+
+    If true_p_int or true_q_int are provided, algorithm treats their length as known 
+    and it sets the leading bits to 1.
+
+    Args:
+        m_int (int): number to be factored, as an integer.
+        true_p_int (int, optional): p - first factor, as an integer. Default: None.
+        true_p_int (int, optional): q - second factor, as an integer. Default: None.
+
+    Returns:
+        m_dict, p_dict, q_dict, z_dict: See module documentation at the top.
+    """
+
     m_binary = bin(m_int)[2:][::-1]
 
     m_dict = {}
@@ -138,6 +220,21 @@ def create_initial_dicts(m_int, true_p_int=None, true_q_int=None):
 
 
 def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=True):
+    """
+    Creates clauses based on dictionaries representing m, p, q and carry bits.
+    
+    Clauses created here are "basic", which means they are bases solely on the 
+    information about the number of bits.
+    Preprocessing in this case is limited to calculating what carry bits are possible
+    for p and q of given length.
+
+    Args:
+        m_dict, p_dict, q_dict, z_dict: See module documentation at the top.
+        apply_preprocessing (bool, optional): If True, the preprocessing will be applied. Default: True
+
+    Returns:
+        clauses (list): See module documentation at the top.
+    """
     clauses = []
     n_c = len(m_dict) + int(np.ceil(len(m_dict)/2)) - 1
     for i in range(n_c):
@@ -148,8 +245,10 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
 
         for j in range(i+1):
             clause += z_dict.get((j, i), 0)
+        
         if type(clause) == int:
             clause = sympify(clause)
+
         if apply_preprocessing and clause != 0:
             # This part exists in order to limit the number of z terms.
             max_sum = get_max_sum_from_clause(clause)
@@ -165,14 +264,26 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
         
         for j in range(1, n_c):
             clause += - 2**j * z_dict.get((i, i+j), 0)
+        
         if clause == 0:
             clause = sympify(clause)
+
         clauses.append(clause)
 
     return clauses
 
 
 def get_max_sum_from_clause(clause):
+    """
+    Calculates maximum sum that can be achieved for given clause.
+    
+    Args:
+        clause: sympy expression representing a clause.
+
+    Returns:
+        max_sum (int): Maximum sum that can be achieved by given clause.
+    """
+
     max_sum = 0
     if clause.func == Mul:
         if isinstance(clause.args[0], Number) and clause.args[0] > 0:
@@ -200,7 +311,22 @@ def get_max_sum_from_clause(clause):
     return max_sum
 
 
-def solve_symmetric_case(p_dict, q_dict):
+def simplify_symmetric_case(p_dict, q_dict):
+    """
+    Simplifies expressions if p_dict and q_dict are "symmetric".
+    
+    Example: numbers p = [1, x, 1] and q = [1, 1-x, 1] are symmetric, since 
+    if multiplied, they will produce the same result regardless of the value of x.
+    This function handles such cases and sets the bits in such way, 
+    that p is greater than q.
+
+    Args:
+        p_dict, q_dict: See module documentation at the top.
+
+    Returns:
+        p_dict, q_dict: See module documentation at the top.
+    """
+
     if len(p_dict) != len(q_dict):
         return p_dict, q_dict
 
@@ -213,6 +339,21 @@ def solve_symmetric_case(p_dict, q_dict):
 
 
 def apply_preprocessing_rules(clauses, verbose=True):
+    """
+    Applies preprocessing rules to given set of clauses.
+
+    Preprocessing rules are those mentioned in section IIB of the paper,
+    especially equation (5), extended by some additional rules (see readme).
+
+    Args:
+        clauses (list): See module documentation at the top.
+        verbose (bool, optional): See module documentation at the top.
+
+    Returns:
+        simplified_clauses (list): See 'clauses' in module documentation at the top.
+        known_expressions (dict): See module documentation at the top.
+    """
+
     known_expressions = {}
     counter = 0 
 
@@ -255,6 +396,22 @@ def apply_preprocessing_rules(clauses, verbose=True):
 
 
 def simplify_clause(clause, known_expressions):
+    """
+    Simplifies clauses based on known_expressions and algebraic rules.
+    
+    Substitutes some variables in given claus with known expressions (if possible).
+    Also performs addition simplification, like dividing clause by a constant (if it makes sense)
+    and substituting x**2 -> x, since the variables are binary.
+
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+
+    Returns:
+        simplified_clause: sympy expression representing a simplified clause.
+    """
+
+
     simplified_clause = clause.subs(known_expressions).expand()
     if simplified_clause.func == Add:
         # Simplifies x**2 -> x, since the variables we use are binary.
@@ -284,8 +441,22 @@ def simplify_clause(clause, known_expressions):
 
 
 def apply_z_rule_1(clause, known_expressions, verbose=False):
-    # Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
-    # z12 must be equal to 0, otherwise the equation can't be satisfied
+    """
+    Extends known_expressions by applying Z-rule 1 (see example below).
+    
+    This rule has been described in the section IIB of the article.
+    Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
+    z12 must be equal to 0, otherwise the equation can't be satisfied
+    
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+        verbose (bool): See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
+
     # TODO: The following equations should add the following rule z_2_3*z_1_3 = 0
     # TODO: p_1 + p_2 + p_3 + p_4 - 2*z_2_3 - 4*z_1_3 = 0
     max_sum = get_max_sum_from_clause(clause)
@@ -307,9 +478,25 @@ def apply_z_rule_1(clause, known_expressions, verbose=False):
 
 
 def apply_z_rule_2(clause, known_expressions, verbose=False):
-    # Example: p_1 + q_1 - 2*z_1_2 = 0
-    # p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied.
-    # For more examples please refer to tests.
+    """
+    Extends known_expressions by applying Z-rule 2 (see example below).
+    
+    Example: p_1 + q_1 - 2*z_1_2 = 0
+    p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied.
+    For more examples please refer to the tests.
+    This rule turned out to be the most problematic one. 
+    There are known cases it doesn't solve (see comments) and it might require
+    refactoring/reworking.
+    
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+        verbose (bool): See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
+
     new_known_expressions = {}
     even_positive_terms = []
     even_negative_terms = []
@@ -441,8 +628,19 @@ def apply_z_rule_2(clause, known_expressions, verbose=False):
 
 
 def apply_rule_of_equality(clause, known_expressions, verbose=False):
-    ## Basic rule of equality
-    # Example: x - 1 = 0
+    """
+    Extends known_expressions by leveraging that clause equals to 0.
+    
+    Example:  x - 1 = 0
+    
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+        verbose (bool): See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
     if clause.func == Symbol:
         known_expressions[clause] = 0
     elif clause.func == Add and len(clause.args) == 2:
@@ -473,6 +671,18 @@ def apply_rule_of_equality(clause, known_expressions, verbose=False):
 
 
 def apply_rule_1(clause, known_expressions, verbose=False):
+    """
+    Extends known_expressions by applying rule 1 from eq. (5).
+        
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+        verbose (bool): See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
+
     clause_variables = list(clause.free_symbols)
     if clause.func == Add and len(clause.args)==2:
         if len(clause_variables) == 2:
@@ -489,7 +699,17 @@ def apply_rule_1(clause, known_expressions, verbose=False):
 
 
 def apply_rule_2(clause, known_expressions, verbose=False):
-    ## Rule 2:
+    """
+    Extends known_expressions by applying rule 2 from eq. (5).
+        
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+        verbose (bool): See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
     x = Symbol('x')
     y = Symbol('y')
 
@@ -510,7 +730,17 @@ def apply_rule_2(clause, known_expressions, verbose=False):
 
 
 def apply_rule_3(clause, known_expressions, verbose=False):
-    ## Rule 3:
+    """
+    Extends known_expressions by applying rule 3 from eq. (5).
+        
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+        verbose (bool): See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
     if clause.func == Add and len(clause.args) == 2:
         if len(clause.args[0].free_symbols) == 0:
             constant_a = clause.args[0]
@@ -525,7 +755,17 @@ def apply_rule_3(clause, known_expressions, verbose=False):
 
 
 def apply_rules_4_and_5(clause, known_expressions, verbose=False):
-    ## Rule 4 & 5:
+    """
+    Extends known_expressions by applying rules 4 and 5 from eq. (5).
+        
+    Args:
+        clause: sympy expression representing a clause.
+        known_expressions (dict): See module documentation at the top.
+        verbose (bool): See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
     constant = 0
     if clause.func == Add:
         for term in clause.args:
@@ -564,6 +804,17 @@ def apply_rules_4_and_5(clause, known_expressions, verbose=False):
 
 
 def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
+    """
+    Updates values of p_dict, q_dict and z_dict with the values stored in known_expressions.
+        
+    Args:
+        known_expressions (dict): See module documentation at the top.
+        p_dict, q_dict, z_dict: See module documentation at the top.
+
+    Returns:
+        known_expressions (dict): See module documentation at the top.
+    """
+
     all_known_expressions = {**known_expressions}
 
     for symbol in known_expressions:
@@ -597,6 +848,16 @@ def update_dictionaries(known_expressions, p_dict, q_dict, z_dict):
 
 
 def create_known_symbols_dict(p_dict, q_dict, z_dict):
+    """
+    Creates a dictionary of known simple symbols.
+        
+    Args:
+        p_dict, q_dict, z_dict: See module documentation at the top.
+
+    Returns:
+        known_symbols (dict): Dictionary of known symbols.
+    """
+
     known_symbols = {}
     for index, value in p_dict.items():
         known_symbols[Symbol('p_' + str(index))] = value
@@ -609,7 +870,39 @@ def create_known_symbols_dict(p_dict, q_dict, z_dict):
     return known_symbols
 
 
+def calculate_number_of_unknowns(p_dict, q_dict, z_dict):
+    """
+    Calculates how many unknowns and unknown carry bits are in given dictionaries.
+
+    Args:
+        p_dict, q_dict, z_dict: See module documentation at the top.
+
+    Returns:
+        number_of_unknowns (int): Number of unknowns.
+        number_of_carry_bits (int): Number of unknown carry bits.
+    """
+
+    p_unknowns = extract_unknowns(p_dict)
+    q_unknowns = extract_unknowns(q_dict)
+    z_unknowns = extract_unknowns(z_dict)
+    all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
+    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
+    number_of_unknowns = len(all_unknowns)
+    number_of_carry_bits = len(carry_bits)
+    return number_of_unknowns, number_of_carry_bits
+
+
 def extract_unknowns(x_dict):
+    """
+    Extracts unknown variable (sympy expressions) from given dictionary
+        
+    Args:
+        x_dict: One of q_dict, p_dict, z_dict, see module documentation at the top.
+
+    Returns:
+        unknowns: list of unknown variables in given dictionary
+    """
+
     all_values = list(x_dict.values())
     list_of_variables = []
     for x in all_values:
@@ -619,11 +912,3 @@ def extract_unknowns(x_dict):
     unknowns = list(set(list_of_variables))
     return unknowns
 
-
-def assess_number_of_unknowns(p_dict, q_dict, z_dict):
-    p_unknowns = extract_unknowns(p_dict)
-    q_unknowns = extract_unknowns(q_dict)
-    z_unknowns = extract_unknowns(z_dict)
-    all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
-    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
-    return len(all_unknowns), len(carry_bits)
