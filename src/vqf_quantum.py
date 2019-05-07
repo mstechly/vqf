@@ -46,8 +46,8 @@ def perform_qaoa(clauses, steps=1, grid_size=None, visualize=True):
     qaoa_inst.betas = betas
     qaoa_inst.gammas = gammas
     betas, gammas = qaoa_inst.get_angles()
-    most_frequent_string, sampling_results = qaoa_inst.get_string(betas, gammas, samples=10000)
-    return most_frequent_string, mapping
+    most_frequent_string, sampling_results = qaoa_inst.get_string(betas, gammas, samples=10000)    
+    return sampling_results, mapping
 
 
 def create_operators_from_clauses(clauses, verbose=False):
@@ -175,12 +175,12 @@ def step_by_step_grid_search_angles(qaoa_inst, grid_size=5, max_step=3, visualiz
 
     return best_betas, best_gammas
 
+
 def one_step_grid_search(qaoa_inst, current_steps, grid_size):
     qaoa_inst.steps = current_steps
     best_beta = None
     best_gamma = None
     best_energy = np.inf
-
 
     fixed_betas = qaoa_inst.betas
     fixed_gammas = qaoa_inst.gammas
