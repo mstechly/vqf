@@ -6,11 +6,12 @@ import pdb
 
 def factor_number(m, true_p, true_q, use_true_values=False):
     apply_preprocessing = True
-    verbose = True
+    preprocessing_verbose = False
+    optimization_verbose = False
     if use_true_values:
-        p_dict, q_dict, z_dict, clauses = create_clauses(m, true_p, true_q, apply_preprocessing, verbose)
+        p_dict, q_dict, z_dict, clauses = create_clauses(m, true_p, true_q, apply_preprocessing, preprocessing_verbose)
     else:
-        p_dict, q_dict, z_dict, clauses = create_clauses(m, None, None, apply_preprocessing, verbose)
+        p_dict, q_dict, z_dict, clauses = create_clauses(m, None, None, apply_preprocessing, preprocessing_verbose)
 
     number_of_uknowns, number_of_carry_bits = calculate_number_of_unknowns(p_dict, q_dict, z_dict)
     print("Number of unknowns:", number_of_uknowns)
@@ -19,7 +20,7 @@ def factor_number(m, true_p, true_q, use_true_values=False):
         if number_of_uknowns == 0:
             return decode_solution(p_dict, q_dict)
 
-    optimization_engine = OptimizationEngine(clauses, steps=1, grid_size=10, verbose=True, visualize=True)
+    optimization_engine = OptimizationEngine(clauses, steps=1, grid_size=10, verbose=optimization_verbose, visualize=True)
     sampling_results, mapping = optimization_engine.perform_qaoa()
     most_frequent_bit_string = max(sampling_results, key=lambda x: sampling_results[x])
     
@@ -29,7 +30,7 @@ def factor_number(m, true_p, true_q, use_true_values=False):
     z_dict = update_dictionary(most_frequent_bit_string, mapping, z_dict)
 
     p, q = decode_solution(p_dict, q_dict)
-    return p, q
+    return p, q, squared_overlap
 
 
 def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict, q_dict):
@@ -106,9 +107,9 @@ def decode_solution(p_dict, q_dict):
     return p, q
 
 
-
 def main():
-    p_q_m_list = [[7, 5, 35], [283, 11, 2893], [67, 37, 2479], [263, 263, 69169], [17, 3, 51]]
+    p_q_m_list = [[7, 5, 35], [17, 3, 51], [283, 11, 2893], [67, 37, 2479], [263, 263, 69169], ]
+
     for p_q_m in p_q_m_list:
         true_p = p_q_m[0]
         true_q = p_q_m[1]
@@ -123,9 +124,12 @@ def main():
             q = int(m / 2)
             print("The primes are:", p, "and", q)
         else:
-            p, q = factor_number(m, true_p, true_q, use_true_values=use_true_values)
+            p, q, squared_overlap = factor_number(m, true_p, true_q, use_true_values=use_true_values)
             print("Calculated primes of ",m, "are:", p, "and", q)
             print("      True primes of ",m, "are:", true_p, "and", true_q)
+            print("Squared overlap:", squared_overlap)
+
+
 
 if __name__ == '__main__':
     main()
