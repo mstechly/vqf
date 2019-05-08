@@ -1,7 +1,8 @@
 from preprocessing import create_clauses, calculate_number_of_unknowns
-from optimization import perform_qaoa
+from optimization import OptimizationEngine
 from sympy import Add, Symbol
 import pdb
+
 
 def factor_number(m, true_p, true_q, use_true_values=False):
     apply_preprocessing = True
@@ -18,7 +19,8 @@ def factor_number(m, true_p, true_q, use_true_values=False):
         if number_of_uknowns == 0:
             return decode_solution(p_dict, q_dict)
 
-    sampling_results, mapping = perform_qaoa(clauses, steps=1, grid_size=10, visualize=True)
+    optimization_engine = OptimizationEngine(clauses, steps=1, grid_size=10, verbose=True, visualize=True)
+    sampling_results, mapping = optimization_engine.perform_qaoa()
     most_frequent_bit_string = max(sampling_results, key=lambda x: sampling_results[x])
     
     squared_overlap = calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict, q_dict)
