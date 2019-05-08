@@ -1,6 +1,6 @@
 from preprocessing import create_clauses, calculate_number_of_unknowns
 from optimization import OptimizationEngine
-from sympy import Add, Symbol
+from sympy import Add, Mul, Symbol
 import pdb
 
 
@@ -69,6 +69,10 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
     for bit_string, count in sampling_results.most_common():
         correct_count = 0
         for bit_id, bit_value in enumerate(bit_string):
+            # This accounts for the fact some of the bits of the sampling results
+            # are irrelevant to the result - namely, carry bits.
+            if bit_id not in correct_assignment.keys():
+                continue
             if bit_value == correct_assignment[bit_id]:
                 correct_count += 1
         overlap = correct_count / len(bit_string) * count
@@ -80,13 +84,13 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
 
 
 def update_dictionary(qaoa_solution, mapping, x_dict):
-    values_dict = {symbol_str: qaoa_solution[index] for symbol_str, index in mapping.items()}
-
+    # values_dict = {symbol_str: qaoa_solution[index] for symbol_str, index in mapping.items()}
+    symbols_dict = {Symbol(symbol_str): qaoa_solution[index] for symbol_str, index in mapping.items()}
     for key, value in x_dict.items():
-        if str(value) in values_dict.keys():
-            x_dict[key] = values_dict[str(value)]
-        if type(value) == Add:
-            x_dict[key] = value.subs(values_dict)
+        if value in symbols_dict.keys():
+            x_dict[key] = symbols_dict[value]
+        if type(value) == Add or type(value) == Mul:
+            x_dict[key] = value.subs(symbols_dict)
     return x_dict
 
 
