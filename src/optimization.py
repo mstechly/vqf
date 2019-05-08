@@ -17,7 +17,7 @@ def perform_qaoa(clauses, steps=1, grid_size=None, visualize=True):
     driver_operators = create_driver_operators(mapping)
 
     minimizer_kwargs = {'method': 'BFGS',
-                            'options': {'ftol': 1e-1, 'xtol': 1e-1,
+                            'options': {'ftol': 1e-5, 'xtol': 1e-5,
                                         'disp': False}}
 
     vqe_option = {'disp': print, 'return_all': True,
