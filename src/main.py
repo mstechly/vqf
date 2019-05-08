@@ -1,5 +1,5 @@
-from preprocessing import create_clauses, assess_number_of_unknowns
-from vqf_quantum import perform_qaoa
+from preprocessing import create_clauses, calculate_number_of_unknowns
+from optimization import perform_qaoa
 from sympy import Add, Symbol
 import pdb
 
@@ -11,7 +11,7 @@ def factor_number(m, true_p, true_q, use_true_values=False):
     else:
         p_dict, q_dict, z_dict, clauses = create_clauses(m, None, None, apply_preprocessing, verbose)
 
-    number_of_uknowns, number_of_carry_bits = assess_number_of_unknowns(p_dict, q_dict, z_dict)
+    number_of_uknowns, number_of_carry_bits = calculate_number_of_unknowns(p_dict, q_dict, z_dict)
     print("Number of unknowns:", number_of_uknowns)
     print("Number of carry bits:", number_of_carry_bits)
     if clauses[0] == 0 and len(set(clauses)) == 1:
@@ -22,9 +22,9 @@ def factor_number(m, true_p, true_q, use_true_values=False):
     most_frequent_bit_string = max(sampling_results, key=lambda x: sampling_results[x])
     
     squared_overlap = calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict, q_dict)
-    p_dict = update_dictionary(qaoa_solution, mapping, p_dict)
-    q_dict = update_dictionary(qaoa_solution, mapping, q_dict)
-    z_dict = update_dictionary(qaoa_solution, mapping, z_dict)
+    p_dict = update_dictionary(most_frequent_bit_string, mapping, p_dict)
+    q_dict = update_dictionary(most_frequent_bit_string, mapping, q_dict)
+    z_dict = update_dictionary(most_frequent_bit_string, mapping, z_dict)
 
     p, q = decode_solution(p_dict, q_dict)
     return p, q
