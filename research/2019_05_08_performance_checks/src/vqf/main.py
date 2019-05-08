@@ -76,9 +76,9 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
                 continue
             if bit_value == correct_assignment[bit_id]:
                 correct_count += 1
-        overlap = correct_count / len(bit_string) * count
+        overlap = correct_count / len(correct_assignment) * count
         total_count += count
-        print(bit_string, count, overlap)
+        print(bit_string, count, correct_count, overlap)
         total_overlap += overlap
     total_overlap = total_overlap / total_count
     return total_overlap * total_overlap
@@ -109,7 +109,6 @@ def decode_solution(p_dict, q_dict):
 
 def main():
     p_q_m_list = [[7, 5, 35], [17, 3, 51], [283, 11, 2893], [67, 37, 2479], [263, 263, 69169], ]
-
     for p_q_m in p_q_m_list:
         true_p = p_q_m[0]
         true_q = p_q_m[1]
