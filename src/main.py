@@ -38,6 +38,16 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
 
     p_binary = [int(char) for char in p_binary_string]
     q_binary = [int(char) for char in q_binary_string]
+    if len(p_binary) < len(p_dict):
+        trailing_zeros = len(p_dict) - len(p_binary)
+        for zero in range(trailing_zeros):
+            p_binary.append(0)
+
+    if len(q_binary) < len(q_dict):
+        trailing_zeros = len(q_dict) - len(q_binary)
+        for zero in range(trailing_zeros):
+            q_binary.append(0)
+
     correct_assignment = {}
     for q_id, q_val in q_dict.items():
         if type(q_val) is Symbol:
