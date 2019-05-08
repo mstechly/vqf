@@ -1,5 +1,4 @@
 from preprocessing import create_clauses
-import pdb
 import pyquil.api as api
 from grove.pyqaoa.qaoa import QAOA
 from pyquil.paulis import PauliTerm, PauliSum
@@ -10,6 +9,10 @@ import numpy as np
 from grove.pyvqe.vqe import VQE
 from functools import reduce
 from visualization import plot_energy_landscape, plot_variance_landscape
+from sympy import Add, Mul, Number
+from itertools import product
+
+import pdb
 
 
 class OptimizationEngine(object):
@@ -84,7 +87,11 @@ class OptimizationEngine(object):
                     variable_counter += 1
             pauli_terms = []
             quadratic_pauli_terms = []
-            for single_term in clause.args:
+            if type(clause) == Add:
+                clause_terms = clause.args
+            elif type(clause) == Mul:
+                clause_terms = [clause]
+            for single_term in clause_terms:
                 if len(single_term.free_symbols) == 0:
                     if self.verbose:
                         print("Constant term", single_term)
@@ -92,26 +99,33 @@ class OptimizationEngine(object):
                 elif len(single_term.free_symbols) == 1:
                     if self.verbose:
                         print("Single term", single_term)
+                    multiplier = 1
+                    if type(single_term) == Mul:
+                        multiplier = int(single_term.args[0])
                     symbol = list(single_term.free_symbols)[0]
                     symbol_id = mapping[str(symbol)]
-                    pauli_terms.append(PauliTerm("I", symbol_id, 1/2))
-                    pauli_terms.append(PauliTerm("Z", symbol_id, -1/2))
-                elif len(single_term.free_symbols) == 2:
+                    pauli_terms.append(PauliTerm("I", symbol_id, 1/2*multiplier))
+                    pauli_terms.append(PauliTerm("Z", symbol_id, -1/2*multiplier))
+                elif len(single_term.free_symbols) == 2 and type(single_term) == Mul:
                     if self.verbose:
                         print("Double term", single_term)
+                    multiplier = 1
+                    if isinstance(single_term.args[0], Number):
+                        multiplier = int(single_term.args[0])
                     symbol_1 = list(single_term.free_symbols)[0]
                     symbol_2 = list(single_term.free_symbols)[1]
                     symbol_id_1 = mapping[str(symbol_1)]
                     symbol_id_2 = mapping[str(symbol_2)]
-                    pauli_term_1 = PauliTerm("I", symbol_id_1, 1/2) - PauliTerm("Z", symbol_id_1, 1/2)
+                    pauli_term_1 = PauliTerm("I", symbol_id_1, 1/2*multiplier) - PauliTerm("Z", symbol_id_1, 1/2*multiplier)
                     pauli_term_2 = PauliTerm("I", symbol_id_2, 1/2) - PauliTerm("Z", symbol_id_2, 1/2)
                     quadratic_pauli_terms.append(pauli_term_1 * pauli_term_2)
                 else:
-                    print("Terms of orders higher than quadratic are not handled.")
+                    Exception("Terms of orders higher than quadratic are not handled.")
             clause_operator = PauliSum(pauli_terms)
             for quadratic_term in quadratic_pauli_terms:
                 clause_operator += quadratic_term
-            squared_clause_operator = clause_operator*clause_operator
+            
+            squared_clause_operator = clause_operator**2
             if self.verbose:
                 print("C:", clause_operator)
                 print("C**2:", squared_clause_operator)
