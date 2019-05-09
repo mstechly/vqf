@@ -8,7 +8,7 @@ def plot_energy_landscape(x, y, values, title=None, legend_title=None, legend_mi
     x, y = preprocess(x, y)
     fig, ax = plt.subplots()
     XX, YY = np.meshgrid(x, y)
-    z = values.reshape(len(x)-1, len(y)-1)
+    z = values.reshape(len(x)-1, len(y)-1).T
     # ax.grid(True, which='minor', axis='both', linestyle='-', color='k')
     # ax.set_xticks(x, minor=True)
     # ax.set_yticks(y, minor=True)
