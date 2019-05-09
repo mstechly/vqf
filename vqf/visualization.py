@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
+from matplotlib.colors import LogNorm
 import pdb
 
 
-def plot_energy_landscape(x, y, values, title=None, legend_title=None, legend_min=0, legend_max=None):
+def plot_energy_landscape(x, y, values, log_legend=False, title=None, legend_title=None, legend_min=0, legend_max=None):
     x, y = preprocess(x, y)
     fig, ax = plt.subplots()
     XX, YY = np.meshgrid(x, y)
@@ -25,7 +26,10 @@ def plot_energy_landscape(x, y, values, title=None, legend_title=None, legend_mi
     ax.yaxis.set_major_locator(tck.MultipleLocator(base=np.pi/4))
 
 
-    mesh_plot = ax.pcolormesh(XX, YY, z, cmap='RdBu', vmin=legend_min, vmax=legend_max)
+    if log_legend:
+        mesh_plot = ax.pcolormesh(XX, YY, z, cmap='RdBu', vmax=legend_max, norm=LogNorm())
+    else:
+        mesh_plot = ax.pcolormesh(XX, YY, z, cmap='RdBu', vmin=legend_min, vmax=legend_max)
 
     ax.set_xlabel("beta")
     ax.set_ylabel("gamma")
@@ -34,7 +38,12 @@ def plot_energy_landscape(x, y, values, title=None, legend_title=None, legend_mi
     ax.set_title(title)
     # set the limits of the plot to the limits of the data
     ax.axis([x.min(), x.max(), y.min(), y.max()])
-    cbar = fig.colorbar(mesh_plot, ax=ax)
+    if log_legend:
+        cbar_formatter = tck.LogFormatter(10, labelOnlyBase=False) 
+        cbar = fig.colorbar(mesh_plot, ax=ax, format=cbar_formatter)
+    else:
+        cbar = fig.colorbar(mesh_plot, ax=ax)
+
     if legend_title is None:
         legend_title = "energy"
     cbar.set_label(legend_title)
