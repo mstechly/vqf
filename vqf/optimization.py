@@ -95,7 +95,7 @@ class OptimizationEngine(object):
                 if len(single_term.free_symbols) == 0:
                     if self.verbose:
                         print("Constant term", single_term)
-                    pauli_terms.append(PauliTerm("I", 0, int(single_term) / 2))
+                    pauli_terms.append(PauliTerm("I", 0, int(single_term)))
                 elif len(single_term.free_symbols) == 1:
                     if self.verbose:
                         print("Single term", single_term)
