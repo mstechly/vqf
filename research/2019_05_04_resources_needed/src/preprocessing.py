@@ -243,8 +243,8 @@ def apply_preprocessing_rules(clauses, verbose=True):
         known_expressions = apply_rule_of_equality(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
 
-        # known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
-        # clause = simplify_clause(clause, known_expressions)
+        known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
+        clause = simplify_clause(clause, known_expressions)
 
 
     simplified_clauses = []
@@ -625,5 +625,6 @@ def assess_number_of_unknowns(p_dict, q_dict, z_dict):
     q_unknowns = extract_unknowns(q_dict)
     z_unknowns = extract_unknowns(z_dict)
     all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
-    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
+    non_carry_unknowns = p_unknowns + q_unknowns
+    carry_bits = [value for value in z_unknowns if 'z' in str(value) and value not in non_carry_unknowns]
     return len(all_unknowns), len(carry_bits)

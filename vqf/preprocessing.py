@@ -886,7 +886,8 @@ def calculate_number_of_unknowns(p_dict, q_dict, z_dict):
     q_unknowns = extract_unknowns(q_dict)
     z_unknowns = extract_unknowns(z_dict)
     all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
-    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
+    non_carry_unknowns = p_unknowns + q_unknowns
+    carry_bits = [value for value in z_unknowns if 'z' in str(value) and value not in non_carry_unknowns]
     number_of_unknowns = len(all_unknowns)
     number_of_carry_bits = len(carry_bits)
     return number_of_unknowns, number_of_carry_bits
