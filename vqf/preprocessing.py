@@ -395,7 +395,7 @@ def apply_preprocessing_rules(clauses, verbose=True):
     return simplified_clauses, known_expressions
 
 
-def simplify_clause(clause, known_expressions):
+def simplify_clause(clause, known_expressions, iterations=2):
     """
     Simplifies clauses based on known_expressions and algebraic rules.
     
@@ -403,6 +403,7 @@ def simplify_clause(clause, known_expressions):
     Also performs addition simplification, like dividing clause by a constant (if it makes sense)
     and substituting x**2 -> x, since the variables are binary.
 
+    TODO: instead of using iterations, it should use some form of recursion.
     Args:
         clause: sympy expression representing a clause.
         known_expressions (dict): See module documentation at the top.
@@ -410,32 +411,32 @@ def simplify_clause(clause, known_expressions):
     Returns:
         simplified_clause: sympy expression representing a simplified clause.
     """
+    simplified_clause = clause
+    for i in range(iterations):
+        simplified_clause = simplified_clause.subs(known_expressions).expand()
+        if simplified_clause.func == Add:
+            # Simplifies x**2 -> x, since the variables we use are binary.
+            for term in simplified_clause.args:
+                if term.func == Mul and 'Pow' in srepr(term):
+                    for subterm in term.args:
+                        if subterm.func == Pow:
+                            simplified_clause = simplified_clause.subs({subterm: subterm.args[0]})
 
+                if term.func == Pow:
+                    simplified_clause = simplified_clause - term + term.args[0]
 
-    simplified_clause = clause.subs(known_expressions).expand()
-    if simplified_clause.func == Add:
-        # Simplifies x**2 -> x, since the variables we use are binary.
-        for term in simplified_clause.args:
-            if term.func == Mul and 'Pow' in srepr(term):
-                for subterm in term.args:
-                    if subterm.func == Pow:
-                        simplified_clause = simplified_clause.subs({subterm: subterm.args[0]})
-
-            if term.func == Pow:
-                simplified_clause = simplified_clause - term + term.args[0]
-
-        # factor() is very resource-heavy - this intends to limit its usage.
-        # It gives even 20x speedup for large numbers!
-        for term in simplified_clause.args:
-            if term.func == Mul or isinstance(term, Number):
-                continue
+            # factor() is very resource-heavy - this intends to limit its usage.
+            # It gives even 20x speedup for large numbers!
+            for term in simplified_clause.args:
+                if term.func == Mul or isinstance(term, Number):
+                    continue
+                else:
+                    break
             else:
-                break
-        else:
-            factored_clause = factor(simplified_clause)
-            if factored_clause.func == Mul:
-                if isinstance(factored_clause.args[0], Number):
-                    simplified_clause = simplified_clause / factored_clause.args[0]
+                factored_clause = factor(simplified_clause)
+                if factored_clause.func == Mul:
+                    if isinstance(factored_clause.args[0], Number):
+                        simplified_clause = simplified_clause / factored_clause.args[0]
 
     return simplified_clause
 
