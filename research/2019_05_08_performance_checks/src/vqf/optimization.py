@@ -38,7 +38,7 @@ class OptimizationEngine(object):
         qaoa_inst (object): Instance of QAOA class from Grove.
 
     """
-    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, verbose=False, visualize=False):
+    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-10, verbose=False, visualize=False):
         self.clauses = clauses
         self.m = m
         self.verbose = verbose
