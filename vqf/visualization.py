@@ -117,11 +117,12 @@ def plot_optimization_trajectory(ax, optimization_trajectory):
     # needs reworking.
     # It serves its purpose, but it's hack and might cause problems in future.
     optimization_trajectory = np.array(optimization_trajectory)
-    betas = optimization_trajectory[:, 0]
-    gammas = optimization_trajectory[:, 1]
-    ax.plot(betas[0], gammas[0], 'g*')
-    ax.plot(betas, gammas, 'g')
-    start_time = time.time()
+    if len(optimization_trajectory) != 0:
+        betas = optimization_trajectory[:, 0]
+        gammas = optimization_trajectory[:, 1]
+        ax.plot(betas[0], gammas[0], 'g*')
+        ax.plot(betas, gammas, 'g')
+        start_time = time.time()
     plt.savefig("optimization_trajectory_"+str(start_time)+'.png')
 
 
