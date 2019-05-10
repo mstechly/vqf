@@ -26,7 +26,7 @@ def factor_number(m, true_p, true_q, use_true_values=False):
             p, q = decode_solution(p_dict, q_dict)
             return p, q, None
 
-    optimization_engine = OptimizationEngine(clauses, steps=1, grid_size=10, verbose=optimization_verbose, visualize=True)
+    optimization_engine = OptimizationEngine(clauses, m, steps=1, grid_size=5, verbose=optimization_verbose, visualize=True)
     sampling_results, mapping = optimization_engine.perform_qaoa()
     most_frequent_bit_string = max(sampling_results, key=lambda x: sampling_results[x])
     

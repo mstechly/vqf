@@ -24,6 +24,7 @@ class OptimizationEngine(object):
 
     Args:
         clauses (list): List of clauses (sympy expressions) representing the problem.
+        m (int): Number to be factored. Needed only for the purpose of tagging result files.
         steps (int, optional): Number of steps in the QAOA algorithm. Default: 1
         grid_size (int, optional): The resolution of the grid for grid search. Default: None
         tol (float, optional): Parameter of BFGS optimization method. Gradient norm must be less than tol before successful termination. Default:1e-5
@@ -37,8 +38,9 @@ class OptimizationEngine(object):
         qaoa_inst (object): Instance of QAOA class from Grove.
 
     """
-    def __init__(self, clauses, steps=1, grid_size=None, tol=1e-5, verbose=False, visualize=False):
+    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, verbose=False, visualize=False):
         self.clauses = clauses
+        self.m = m
         self.verbose = verbose
         self.visualize = visualize
         if grid_size is None:
@@ -121,6 +123,7 @@ class OptimizationEngine(object):
                     quadratic_pauli_terms.append(pauli_term_1 * pauli_term_2)
                 else:
                     Exception("Terms of orders higher than quadratic are not handled.")
+
             clause_operator = PauliSum(pauli_terms)
             for quadratic_term in quadratic_pauli_terms:
                 clause_operator += quadratic_term
@@ -198,13 +201,19 @@ class OptimizationEngine(object):
                       minimizer_kwargs=self.qaoa_inst.minimizer_kwargs)
         cost_hamiltonian = reduce(lambda x, y: x + y, self.qaoa_inst.cost_ham)
         all_energies = []
+        data_to_save = []
+        if save_data:
+            file_name = "_".join(str(m), "grid", str(self.grid_size), str(time.time())) + ".csv"
         for betas in all_betas:
             for gammas in all_gammas:
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
                 energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, self.qaoa_inst.qvm)
                 all_energies.append(energy)
-                print(betas, gammas, end="\r")
+                if self.verbose:
+                    print(betas, gammas, energy, end="\r")
+                if save_data:
+                    data_to_save.append(np.hstack([betas, gammas, energy]))
                 if energy < best_energy:
                     best_energy = energy
                     best_betas = betas
@@ -212,7 +221,8 @@ class OptimizationEngine(object):
                     if self.verbose:
                         print("Lowest energy:", best_energy)
                         print("Angles:", best_betas, best_gammas)
-                
+            if save_data:
+                np.savetxt(file_name, np.array(data_to_save), delimiter=",")
 
         if self.visualize:
             if self.qaoa_inst.steps == 1:
