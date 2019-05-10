@@ -724,6 +724,10 @@ def apply_rule_2(clause, known_expressions, verbose=False):
             known_expressions[clause_variables[0] * clause_variables[1]] = 0
             if 'q' in str(clause_variables[1]):
                 known_expressions[clause_variables[0]] = 1 - clause_variables[1]
+            elif 'q' in str(clause_variables[0]):
+                known_expressions[clause_variables[1]] = 1 - clause_variables[0]
+            elif 'p' in str(clause_variables[1]):
+                known_expressions[clause_variables[0]] = 1 - clause_variables[1]
             else:
                 known_expressions[clause_variables[1]] = 1 - clause_variables[0]
 
