@@ -161,11 +161,11 @@ class OptimizationEngine(object):
             mapping (dict): See class description.
 
         """
-        betas, gammas = self.simple_grid_search_angles()
+        betas, gammas = self.simple_grid_search_angles(save_data=True)
         # betas, gammas = self.step_by_step_grid_search_angles()
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
-        betas, gammas = self.qaoa_inst.get_angles()
+        betas, gammas = self.get_angles()
         _, sampling_results = self.qaoa_inst.get_string(betas, gammas, samples=10000)    
         return sampling_results, self.mapping
 
@@ -191,6 +191,7 @@ class OptimizationEngine(object):
         best_gammas = result.x[self.qaoa_inst.steps:]
         optimization_trajectory = result.iteration_params
         energy_history = result.expectation_vals
+
         if self.ax is not None and self.visualize and self.qaoa_inst.steps==1:
             plot_optimization_trajectory(self.ax, optimization_trajectory)
         return best_betas, best_gammas
@@ -232,7 +233,7 @@ class OptimizationEngine(object):
         all_energies = []
         data_to_save = []
         if save_data:
-            file_name = "_".join(str(m), "grid", str(self.grid_size), str(time.time())) + ".csv"
+            file_name = "_".join([str(self.m), "grid", str(self.grid_size), str(time.time())]) + ".csv"
         for betas in all_betas:
             for gammas in all_gammas:
                 stacked_params = np.hstack((betas, gammas))
