@@ -1,4 +1,5 @@
 from preprocessing import create_clauses, calculate_number_of_unknowns
+from preprocessing import factor_56153, factor_291311
 from optimization import OptimizationEngine
 from sympy import Add, Mul, Symbol
 import pdb
@@ -8,7 +9,11 @@ def factor_number(m, true_p, true_q, use_true_values=False):
     apply_preprocessing = True
     preprocessing_verbose = False
     optimization_verbose = False
-    if use_true_values:
+    if m == 56153:
+        p_dict, q_dict, z_dict, clauses = factor_56153()
+    elif m == 291311:
+        p_dict, q_dict, z_dict, clauses = factor_291311()
+    elif use_true_values:
         p_dict, q_dict, z_dict, clauses = create_clauses(m, true_p, true_q, apply_preprocessing, preprocessing_verbose)
     else:
         p_dict, q_dict, z_dict, clauses = create_clauses(m, None, None, apply_preprocessing, preprocessing_verbose)
@@ -18,9 +23,10 @@ def factor_number(m, true_p, true_q, use_true_values=False):
     print("Number of carry bits:", number_of_carry_bits)
     if clauses[0] == 0 and len(set(clauses)) == 1:
         if number_of_uknowns == 0:
-            return decode_solution(p_dict, q_dict)
+            p, q = decode_solution(p_dict, q_dict)
+            return p, q, None
 
-    optimization_engine = OptimizationEngine(clauses, steps=1, grid_size=10, verbose=optimization_verbose, visualize=True)
+    optimization_engine = OptimizationEngine(clauses, m, steps=1, grid_size=5, verbose=optimization_verbose, visualize=True)
     sampling_results, mapping = optimization_engine.perform_qaoa()
     most_frequent_bit_string = max(sampling_results, key=lambda x: sampling_results[x])
     
@@ -67,6 +73,7 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
     total_overlap = 0
     total_count = 0
     print(correct_assignment)
+    print(mapping)
     for bit_string, count in sampling_results.most_common():
         correct_count = 0
         for bit_id, bit_value in enumerate(bit_string):
@@ -108,7 +115,7 @@ def decode_solution(p_dict, q_dict):
 
 
 def main():
-    p_q_m_list = [[7, 5, 35], [17, 3, 51], [283, 11, 2893], [67, 37, 2479], [263, 263, 69169], ]
+    p_q_m_list = [[283, 7, 1981], [29, 11, 319], [263, 263, 69169], [263, 11, 2893], [241, 233, 56153], [557, 523, 291311]]
     for p_q_m in p_q_m_list:
         true_p = p_q_m[0]
         true_q = p_q_m[1]

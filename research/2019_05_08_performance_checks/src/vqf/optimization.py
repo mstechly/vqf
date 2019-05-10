@@ -8,9 +8,10 @@ import scipy.optimize
 import numpy as np
 from grove.pyvqe.vqe import VQE
 from functools import reduce
-from visualization import plot_energy_landscape, plot_variance_landscape
+from visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
 from sympy import Add, Mul, Number
 from itertools import product
+import time
 
 import pdb
 
@@ -24,6 +25,7 @@ class OptimizationEngine(object):
 
     Args:
         clauses (list): List of clauses (sympy expressions) representing the problem.
+        m (int): Number to be factored. Needed only for the purpose of tagging result files.
         steps (int, optional): Number of steps in the QAOA algorithm. Default: 1
         grid_size (int, optional): The resolution of the grid for grid search. Default: None
         tol (float, optional): Parameter of BFGS optimization method. Gradient norm must be less than tol before successful termination. Default:1e-5
@@ -37,8 +39,9 @@ class OptimizationEngine(object):
         qaoa_inst (object): Instance of QAOA class from Grove.
 
     """
-    def __init__(self, clauses, steps=1, grid_size=None, tol=1e-5, verbose=False, visualize=False):
+    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, verbose=False, visualize=False):
         self.clauses = clauses
+        self.m = m
         self.verbose = verbose
         self.visualize = visualize
         if grid_size is None:
@@ -69,6 +72,8 @@ class OptimizationEngine(object):
                           vqe_options=vqe_option, 
                           store_basis=True)
 
+        self.ax = None
+
     def create_operators_from_clauses(self):
         """
         Creates cost hamiltonian from clauses.
@@ -95,7 +100,7 @@ class OptimizationEngine(object):
                 if len(single_term.free_symbols) == 0:
                     if self.verbose:
                         print("Constant term", single_term)
-                    pauli_terms.append(PauliTerm("I", 0, int(single_term) / 2))
+                    pauli_terms.append(PauliTerm("I", 0, int(single_term)))
                 elif len(single_term.free_symbols) == 1:
                     if self.verbose:
                         print("Single term", single_term)
@@ -121,6 +126,7 @@ class OptimizationEngine(object):
                     quadratic_pauli_terms.append(pauli_term_1 * pauli_term_2)
                 else:
                     Exception("Terms of orders higher than quadratic are not handled.")
+
             clause_operator = PauliSum(pauli_terms)
             for quadratic_term in quadratic_pauli_terms:
                 clause_operator += quadratic_term
@@ -155,15 +161,42 @@ class OptimizationEngine(object):
             mapping (dict): See class description.
 
         """
-        betas, gammas = self.simple_grid_search_angles()
+        betas, gammas = self.simple_grid_search_angles(save_data=True)
         # betas, gammas = self.step_by_step_grid_search_angles()
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
-        betas, gammas = self.qaoa_inst.get_angles()
+        betas, gammas = self.get_angles()
         _, sampling_results = self.qaoa_inst.get_string(betas, gammas, samples=10000)    
         return sampling_results, self.mapping
 
-    def simple_grid_search_angles(self):
+    def get_angles(self):
+        """
+        Finds optimal angles with the quantum variational eigensolver method.
+        
+        It's direct copy of the function `get_angles` from Grove. I decided to copy it here
+        to access to the optimization trajectory (`angles_history`).
+        Returns:
+            best_betas, best_gammas (np.arrays): best values of the betas and gammas found. 
+
+        """
+        stacked_params = np.hstack((self.qaoa_inst.betas, self.qaoa_inst.gammas))
+        vqe = VQE(self.qaoa_inst.minimizer, minimizer_args=self.qaoa_inst.minimizer_args,
+                  minimizer_kwargs=self.qaoa_inst.minimizer_kwargs)
+        cost_ham = reduce(lambda x, y: x + y, self.qaoa_inst.cost_ham)
+        # maximizing the cost function!
+        param_prog = self.qaoa_inst.get_parameterized_program()
+        result = vqe.vqe_run(param_prog, cost_ham, stacked_params, qvm=self.qaoa_inst.qvm,
+                             **self.qaoa_inst.vqe_options)
+        best_betas = result.x[:self.qaoa_inst.steps]
+        best_gammas = result.x[self.qaoa_inst.steps:]
+        optimization_trajectory = result.iteration_params
+        energy_history = result.expectation_vals
+
+        if self.ax is not None and self.visualize and self.qaoa_inst.steps==1:
+            plot_optimization_trajectory(self.ax, optimization_trajectory)
+        return best_betas, best_gammas
+
+    def simple_grid_search_angles(self, save_data=False):
         """
         Finds optimal angles for QAOA by performing grid search on all the angles.
         This is not recommended for higher values of steps parameter, 
@@ -198,13 +231,19 @@ class OptimizationEngine(object):
                       minimizer_kwargs=self.qaoa_inst.minimizer_kwargs)
         cost_hamiltonian = reduce(lambda x, y: x + y, self.qaoa_inst.cost_ham)
         all_energies = []
+        data_to_save = []
+        if save_data:
+            file_name = "_".join([str(self.m), "grid", str(self.grid_size), str(time.time())]) + ".csv"
         for betas in all_betas:
             for gammas in all_gammas:
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
                 energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, self.qaoa_inst.qvm)
                 all_energies.append(energy)
-                print(betas, gammas, end="\r")
+                if self.verbose:
+                    print(betas, gammas, energy, end="\r")
+                if save_data:
+                    data_to_save.append(np.hstack([betas, gammas, energy]))
                 if energy < best_energy:
                     best_energy = energy
                     best_betas = betas
@@ -212,11 +251,12 @@ class OptimizationEngine(object):
                     if self.verbose:
                         print("Lowest energy:", best_energy)
                         print("Angles:", best_betas, best_gammas)
-                
+            if save_data:
+                np.savetxt(file_name, np.array(data_to_save), delimiter=",")
 
         if self.visualize:
             if self.qaoa_inst.steps == 1:
-                plot_energy_landscape(all_betas, all_gammas, np.array(all_energies))
+                self.ax = plot_energy_landscape(all_betas, all_gammas, np.array(all_energies), log_legend=True)
             else:
                 plot_variance_landscape(all_betas, all_gammas, np.array(all_energies))
 
@@ -288,3 +328,4 @@ class OptimizationEngine(object):
                     best_gamma = gamma
 
         return best_beta, best_gamma
+

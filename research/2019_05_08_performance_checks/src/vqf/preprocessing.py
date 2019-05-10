@@ -395,7 +395,7 @@ def apply_preprocessing_rules(clauses, verbose=True):
     return simplified_clauses, known_expressions
 
 
-def simplify_clause(clause, known_expressions):
+def simplify_clause(clause, known_expressions, iterations=2):
     """
     Simplifies clauses based on known_expressions and algebraic rules.
     
@@ -403,6 +403,7 @@ def simplify_clause(clause, known_expressions):
     Also performs addition simplification, like dividing clause by a constant (if it makes sense)
     and substituting x**2 -> x, since the variables are binary.
 
+    TODO: instead of using iterations, it should use some form of recursion.
     Args:
         clause: sympy expression representing a clause.
         known_expressions (dict): See module documentation at the top.
@@ -410,32 +411,32 @@ def simplify_clause(clause, known_expressions):
     Returns:
         simplified_clause: sympy expression representing a simplified clause.
     """
+    simplified_clause = clause
+    for i in range(iterations):
+        simplified_clause = simplified_clause.subs(known_expressions).expand()
+        if simplified_clause.func == Add:
+            # Simplifies x**2 -> x, since the variables we use are binary.
+            for term in simplified_clause.args:
+                if term.func == Mul and 'Pow' in srepr(term):
+                    for subterm in term.args:
+                        if subterm.func == Pow:
+                            simplified_clause = simplified_clause.subs({subterm: subterm.args[0]})
 
+                if term.func == Pow:
+                    simplified_clause = simplified_clause - term + term.args[0]
 
-    simplified_clause = clause.subs(known_expressions).expand()
-    if simplified_clause.func == Add:
-        # Simplifies x**2 -> x, since the variables we use are binary.
-        for term in simplified_clause.args:
-            if term.func == Mul and 'Pow' in srepr(term):
-                for subterm in term.args:
-                    if subterm.func == Pow:
-                        simplified_clause = simplified_clause.subs({subterm: subterm.args[0]})
-
-            if term.func == Pow:
-                simplified_clause = simplified_clause - term + term.args[0]
-
-        # factor() is very resource-heavy - this intends to limit its usage.
-        # It gives even 20x speedup for large numbers!
-        for term in simplified_clause.args:
-            if term.func == Mul or isinstance(term, Number):
-                continue
+            # factor() is very resource-heavy - this intends to limit its usage.
+            # It gives even 20x speedup for large numbers!
+            for term in simplified_clause.args:
+                if term.func == Mul or isinstance(term, Number):
+                    continue
+                else:
+                    break
             else:
-                break
-        else:
-            factored_clause = factor(simplified_clause)
-            if factored_clause.func == Mul:
-                if isinstance(factored_clause.args[0], Number):
-                    simplified_clause = simplified_clause / factored_clause.args[0]
+                factored_clause = factor(simplified_clause)
+                if factored_clause.func == Mul:
+                    if isinstance(factored_clause.args[0], Number):
+                        simplified_clause = simplified_clause / factored_clause.args[0]
 
     return simplified_clause
 
@@ -886,7 +887,8 @@ def calculate_number_of_unknowns(p_dict, q_dict, z_dict):
     q_unknowns = extract_unknowns(q_dict)
     z_unknowns = extract_unknowns(z_dict)
     all_unknowns = list(set(p_unknowns + q_unknowns + z_unknowns))
-    carry_bits = [value for value in z_unknowns if 'z' in str(value)]
+    non_carry_unknowns = p_unknowns + q_unknowns
+    carry_bits = [value for value in z_unknowns if 'z' in str(value) and value not in non_carry_unknowns]
     number_of_unknowns = len(all_unknowns)
     number_of_carry_bits = len(carry_bits)
     return number_of_unknowns, number_of_carry_bits
@@ -912,3 +914,39 @@ def extract_unknowns(x_dict):
     unknowns = list(set(list_of_variables))
     return unknowns
 
+def factor_56153():
+    clauses = []
+    p_3 = Symbol('p_3')
+    q_3 = Symbol('q_3')
+    p_4 = Symbol('p_4')
+    q_4 = Symbol('q_4')
+
+    clauses.append(p_3 + q_3 - 1)
+    clauses.append(p_4 + q_4 - 1)
+    clauses.append(p_4*q_3 + p_3*q_4 - 1)
+    p_dict = {0: 1, 1: 0, 2: 0, 3: p_3, 4: p_4, 5: 1, 6: 1, 7: 1}
+    q_dict = {0: 1, 1: 0, 2: 0, 3: q_3, 4: q_4, 5: 1, 6: 1, 7: 1}
+    z_dict = {}
+    return p_dict, q_dict, z_dict, clauses
+
+
+def factor_291311():
+    clauses = []
+    p_1 = Symbol('p_1')
+    p_2 = Symbol('p_2')
+    p_5 = Symbol('p_5')
+    q_1 = Symbol('q_1')
+    q_2 = Symbol('q_2')
+    q_5 = Symbol('q_5')
+
+    clauses.append(p_1 + q_1 - 1)
+    clauses.append(p_2 + q_2 - 1)
+    clauses.append(p_5 + q_5 - 1)
+    clauses.append(p_1*q_2 + p_2*q_1 - 1)
+    clauses.append(p_2*q_5 + p_5*q_2 - 1)
+    clauses.append(p_5*q_1 + q_5*p_1 - 1)
+
+    p_dict = {0: 1, 1: p_1, 2: p_2, 3: 1, 4: 0, 5: p_5, 6: 0, 7: 0, 8: 0, 9: 1}
+    q_dict = {0: 1, 1: q_1, 2: q_2, 3: 1, 4: 0, 5: q_5, 6: 0, 7: 0, 8: 0, 9: 1}
+    z_dict = {}
+    return p_dict, q_dict, z_dict, clauses
