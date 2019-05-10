@@ -11,6 +11,7 @@ from functools import reduce
 from visualization import plot_energy_landscape, plot_variance_landscape
 from sympy import Add, Mul, Number
 from itertools import product
+import time
 
 import pdb
 

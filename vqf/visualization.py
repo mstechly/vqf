@@ -54,11 +54,15 @@ def plot_energy_landscape(x, y, values, log_legend=False, title=None, legend_tit
 def plot_variance_landscape(betas, gammas, values):
     steps = betas.shape[1]
     grid_size = int(betas.shape[0]**(1/steps))
+    all_mean_values = []
+    all_min_values = []
+    all_var_values = []
     for p in range(steps):
         x = betas[:, p]
         y = gammas[:, p]
         z = values.reshape([grid_size**betas.shape[1]]*2)
         mean_values = []
+        min_values = []
         var_values = []
         for beta_0 in np.unique(x):
             for gamma_0 in np.unique(y):
@@ -66,18 +70,40 @@ def plot_variance_landscape(betas, gammas, values):
                 gammas_mask = gammas[:, p] == gamma_0
                 z_subset = z[np.ix_(betas_mask, gammas_mask)]
                 mean_z = np.mean(z_subset)
+                min_z = np.min(z_subset)
                 var_z = np.var(z_subset)
                 mean_values.append(mean_z)
+                min_values.append(min_z)
                 var_values.append(var_z)
+        all_mean_values.append(mean_values)
+        all_min_values.append(min_values)
+        all_var_values.append(var_values)
 
-
+    max_mean_value = np.max(all_mean_values)
+    max_min_value = np.max(all_min_values)
+    max_var_value = np.max(all_var_values)
+    for p in range(steps):
+        x = betas[:, p]
+        y = gammas[:, p]
+        mean_values = all_mean_values[p]
+        min_values = all_min_values[p]
+        var_values = all_var_values[p]
         plot_energy_landscape(np.unique(x), np.unique(y), np.array(mean_values), 
-            title='steps_'+ str(steps) + ' Mean energy layer '+str(p), 
+            title='steps_'+ str(steps) + ' Mean energy, layer '+str(p), 
             legend_title='energy', 
             legend_min=0, 
-            legend_max=np.max(values))
+            legend_max=max_mean_value)
+        plot_energy_landscape(np.unique(x), np.unique(y), np.array(min_values), 
+            title='steps_'+ str(steps) + ' Min energy, layer '+str(p), 
+            legend_title='energy', 
+            legend_min=0, 
+            legend_max=max_min_value)
+
         plot_energy_landscape(np.unique(x), np.unique(y), np.array(var_values),
-            title='steps_'+ str(steps) + ' Energy variance layer '+str(p), legend_title='variance')
+            title='steps_'+ str(steps) + ' Energy variance, layer '+str(p), 
+            legend_title='variance',
+            legend_min=0,
+            legend_max=max_var_value)
 
 
 def preprocess(x, y):
