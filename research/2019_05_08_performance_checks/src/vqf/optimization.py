@@ -1,4 +1,3 @@
-from preprocessing import create_clauses
 import pyquil.api as api
 from grove.pyqaoa.qaoa import QAOA
 from pyquil.paulis import PauliTerm, PauliSum
@@ -8,7 +7,7 @@ import scipy.optimize
 import numpy as np
 from grove.pyvqe.vqe import VQE
 from functools import reduce
-from visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
+from .visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
 from sympy import Add, Mul, Number
 from itertools import product
 import time
@@ -54,7 +53,7 @@ class OptimizationEngine(object):
         driver_operators = self.create_driver_operators()
         minimizer_kwargs = {'method': 'BFGS',
                                 'options': {'gtol': tol, 'disp': False}}
-        vqe_option = {'disp': print, 'return_all': True,
+        vqe_option = {'disp': None, 'return_all': True,
                       'samples': None}
 
         qubits = list(range(len(mapping)));
@@ -161,8 +160,8 @@ class OptimizationEngine(object):
             mapping (dict): See class description.
 
         """
-        betas, gammas = self.simple_grid_search_angles(save_data=True)
-        # betas, gammas = self.step_by_step_grid_search_angles()
+        # betas, gammas = self.simple_grid_search_angles(save_data=True)
+        betas, gammas = self.step_by_step_grid_search_angles()
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
         betas, gammas = self.get_angles()
@@ -321,7 +320,8 @@ class OptimizationEngine(object):
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
                 energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, self.qaoa_inst.qvm)
-                print(beta, gamma, end="\r")
+                if self.verbose:
+                    print(beta, gamma, end="\r")
                 if energy < best_energy:
                     best_energy = energy
                     best_beta = beta
