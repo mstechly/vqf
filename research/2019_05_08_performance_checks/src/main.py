@@ -6,15 +6,13 @@ import numpy as np
 import pdb
 
 
-def run_single_case(p_q_info, clauses, steps, grid_size):
-    optimization_verbose = False
-    optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-7, verbose=optimization_verbose, visualize=False)
+def run_single_case(p_q_info, optimization_engine):
     sampling_results, mapping = optimization_engine.perform_qaoa()
     most_frequent_bit_string = max(sampling_results, key=lambda x: sampling_results[x])
     
     squared_overlap = calculate_squared_overlap(mapping, sampling_results, p_q_info)
 
-    return squared_overlap
+    return squared_overlap, optimization_engine.step_by_step_results
 
 
 def calculate_squared_overlap(mapping, sampling_results, p_q_info):
@@ -104,12 +102,20 @@ def main():
             continue
 
         p_q_info = [true_p, true_q, p_dict, q_dict]
+        step_by_step_results = None
         for steps in range(1, 9):
             for i in range(3):
-                print(m, steps, i)
-                squared_overlap = run_single_case(p_q_info, clauses, steps, grid_size)
+                print(m, steps, i)                
+                optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, verbose=optimization_verbose, visualize=False)
+                optimization_engine.step_by_step_results = step_by_step_results
+                squared_overlap, step_by_step_results = run_single_case(p_q_info, optimization_engine)
+                
                 print(squared_overlap)
                 results.append([m, steps, squared_overlap])
+
+                optimization_history = optimization_engine.optimization_history
+                history_file_name = "_".join([str(m), str(steps), str(i), "history"]) + ".csv"
+                np.savetxt(history_file_name, optimization_history, delimiter=",")
             np.savetxt("results.csv", results, delimiter=",", header="m,steps,squared_overlap", fmt='%.4f', comments='')
 
 if __name__ == '__main__':

@@ -14,6 +14,8 @@ import time
 
 import pdb
 
+def pass_fun(arg):
+    pass
 
 class OptimizationEngine(object):
     """
@@ -38,11 +40,13 @@ class OptimizationEngine(object):
         qaoa_inst (object): Instance of QAOA class from Grove.
 
     """
-    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-10, verbose=False, visualize=False):
+    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, verbose=False, visualize=False):
         self.clauses = clauses
         self.m = m
         self.verbose = verbose
         self.visualize = visualize
+        self.step_by_step_results = None
+        self.optimization_history = None
         if grid_size is None:
             self.grid_size = len(clauses) + len(qubits)
         else:
@@ -53,7 +57,11 @@ class OptimizationEngine(object):
         driver_operators = self.create_driver_operators()
         minimizer_kwargs = {'method': 'BFGS',
                                 'options': {'gtol': tol, 'disp': False}}
-        vqe_option = {'disp': None, 'return_all': True,
+        if self.verbose:
+            print_fun = print
+        else:
+            print_fun = pass_fun
+        vqe_option = {'disp': print_fun, 'return_all': True,
                       'samples': None}
 
         qubits = list(range(len(mapping)));
@@ -161,10 +169,13 @@ class OptimizationEngine(object):
 
         """
         # betas, gammas = self.simple_grid_search_angles(save_data=True)
-        betas, gammas = self.step_by_step_grid_search_angles()
+        betas, gammas = self.step_by_step_grid_search_angles(starting_angles=self.step_by_step_results)
+        self.step_by_step_results = [betas, gammas]
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
         betas, gammas = self.get_angles()
+        self.qaoa_inst.betas = betas
+        self.qaoa_inst.gammas = gammas
         _, sampling_results = self.qaoa_inst.get_string(betas, gammas, samples=10000)    
         return sampling_results, self.mapping
 
@@ -193,6 +204,9 @@ class OptimizationEngine(object):
 
         if self.ax is not None and self.visualize and self.qaoa_inst.steps==1:
             plot_optimization_trajectory(self.ax, optimization_trajectory)
+
+        self.optimization_history = np.hstack([np.array(optimization_trajectory), np.array([energy_history]).T])
+
         return best_betas, best_gammas
 
     def simple_grid_search_angles(self, save_data=False):
@@ -261,7 +275,7 @@ class OptimizationEngine(object):
 
         return best_betas, best_gammas
 
-    def step_by_step_grid_search_angles(self):
+    def step_by_step_grid_search_angles(self, starting_angles=None):
         """
         Finds optimal angles for QAOA by performing "step-by-step" grid search.
         It finds optimal angles by performing grid search on the QAOA instance with steps=1.
@@ -273,13 +287,28 @@ class OptimizationEngine(object):
             best_betas, best_gammas (np.arrays): best values of the betas and gammas found. 
 
         """
-
         max_step = self.qaoa_inst.steps
-        self.qaoa_inst.betas = np.array([])
-        self.qaoa_inst.gammas = np.array([])
-        best_betas = np.array([])
-        best_gammas = np.array([])
-        for current_step in range(1, max_step+1):
+        if starting_angles is None:
+            all_steps = range(1, max_step+1)
+            best_betas = np.array([])
+            best_gammas = np.array([])
+        elif len(starting_angles[0]) == max_step - 1:
+            all_steps = [max_step]
+            best_betas = starting_angles[0]
+            best_gammas = starting_angles[1]
+        elif len(starting_angles[0]) == max_step:
+            best_betas = starting_angles[0]
+            best_gammas = starting_angles[1]
+            return best_betas, best_gammas
+        else:
+            all_steps = range(1, max_step+1)
+            best_betas = np.array([])
+            best_gammas = np.array([])
+
+        self.qaoa_inst.betas = best_betas
+        self.qaoa_inst.gammas = best_gammas
+
+        for current_step in all_steps:
             if self.verbose:
                 print("step:", current_step, "\n")
             beta, gamma = self.one_step_grid_search(current_step)
