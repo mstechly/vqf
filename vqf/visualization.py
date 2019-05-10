@@ -3,9 +3,13 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 from matplotlib.colors import LogNorm
 import pdb
+import time
 
 
 def plot_energy_landscape(x, y, values, log_legend=False, title=None, legend_title=None, legend_min=0, legend_max=None):
+    # Clearing the canvas, so we always draw on the empty canvas. Just in case.
+    plt.clf()
+
     x, y = preprocess(x, y)
     fig, ax = plt.subplots()
     XX, YY = np.meshgrid(x, y)
@@ -36,6 +40,7 @@ def plot_energy_landscape(x, y, values, log_legend=False, title=None, legend_tit
     if title is None:
         title = "QAOA energy landscape"
     ax.set_title(title)
+
     # set the limits of the plot to the limits of the data
     ax.axis([x.min(), x.max(), y.min(), y.max()])
     if log_legend:
@@ -49,7 +54,8 @@ def plot_energy_landscape(x, y, values, log_legend=False, title=None, legend_tit
     cbar.set_label(legend_title)
 
     plt.savefig(title)
-    plt.clf()
+    return ax
+
 
 def plot_variance_landscape(betas, gammas, values):
     steps = betas.shape[1]
@@ -104,6 +110,19 @@ def plot_variance_landscape(betas, gammas, values):
             legend_title='variance',
             legend_min=0,
             legend_max=max_var_value)
+
+    
+def plot_optimization_trajectory(ax, optimization_trajectory):
+    # TODO: this mechanism with passing ax as it is now
+    # needs reworking.
+    # It serves its purpose, but it's hack and might cause problems in future.
+    optimization_trajectory = np.array(optimization_trajectory)
+    betas = optimization_trajectory[:, 0]
+    gammas = optimization_trajectory[:, 1]
+    ax.plot(betas[0], gammas[0], 'g*')
+    ax.plot(betas, gammas, 'g')
+    start_time = time.time()
+    plt.savefig("optimization_trajectory_"+str(start_time)+'.png')
 
 
 def preprocess(x, y):

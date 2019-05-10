@@ -8,7 +8,7 @@ import scipy.optimize
 import numpy as np
 from grove.pyvqe.vqe import VQE
 from functools import reduce
-from visualization import plot_energy_landscape, plot_variance_landscape
+from visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
 from sympy import Add, Mul, Number
 from itertools import product
 import time
@@ -71,6 +71,8 @@ class OptimizationEngine(object):
                           rand_seed=None,
                           vqe_options=vqe_option, 
                           store_basis=True)
+
+        self.ax = None
 
     def create_operators_from_clauses(self):
         """
@@ -167,7 +169,33 @@ class OptimizationEngine(object):
         _, sampling_results = self.qaoa_inst.get_string(betas, gammas, samples=10000)    
         return sampling_results, self.mapping
 
-    def simple_grid_search_angles(self):
+    def get_angles(self):
+        """
+        Finds optimal angles with the quantum variational eigensolver method.
+        
+        It's direct copy of the function `get_angles` from Grove. I decided to copy it here
+        to access to the optimization trajectory (`angles_history`).
+        Returns:
+            best_betas, best_gammas (np.arrays): best values of the betas and gammas found. 
+
+        """
+        stacked_params = np.hstack((self.qaoa_inst.betas, self.qaoa_inst.gammas))
+        vqe = VQE(self.qaoa_inst.minimizer, minimizer_args=self.qaoa_inst.minimizer_args,
+                  minimizer_kwargs=self.qaoa_inst.minimizer_kwargs)
+        cost_ham = reduce(lambda x, y: x + y, self.qaoa_inst.cost_ham)
+        # maximizing the cost function!
+        param_prog = self.qaoa_inst.get_parameterized_program()
+        result = vqe.vqe_run(param_prog, cost_ham, stacked_params, qvm=self.qaoa_inst.qvm,
+                             **self.qaoa_inst.vqe_options)
+        best_betas = result.x[:self.qaoa_inst.steps]
+        best_gammas = result.x[self.qaoa_inst.steps:]
+        optimization_trajectory = result.iteration_params
+        energy_history = result.expectation_vals
+        if self.ax is not None and self.visualize and self.qaoa_inst.steps==1:
+            plot_optimization_trajectory(self.ax, optimization_trajectory)
+        return best_betas, best_gammas
+
+    def simple_grid_search_angles(self, save_data=False):
         """
         Finds optimal angles for QAOA by performing grid search on all the angles.
         This is not recommended for higher values of steps parameter, 
@@ -227,7 +255,7 @@ class OptimizationEngine(object):
 
         if self.visualize:
             if self.qaoa_inst.steps == 1:
-                plot_energy_landscape(all_betas, all_gammas, np.array(all_energies))
+                self.ax = plot_energy_landscape(all_betas, all_gammas, np.array(all_energies), log_legend=True)
             else:
                 plot_variance_landscape(all_betas, all_gammas, np.array(all_energies))
 
