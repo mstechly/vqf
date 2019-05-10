@@ -914,3 +914,39 @@ def extract_unknowns(x_dict):
     unknowns = list(set(list_of_variables))
     return unknowns
 
+def factor_56153():
+    clauses = []
+    p_3 = Symbol('p_3')
+    q_3 = Symbol('q_3')
+    p_4 = Symbol('p_4')
+    q_4 = Symbol('q_4')
+
+    clauses.append(p_3 + q_3 - 1)
+    clauses.append(p_4 + q_4 - 1)
+    clauses.append(p_4*q_3 + p_3*q_4 - 1)
+    p_dict = {0: 1, 1: 0, 2: 0, 3: p_3, 4: p_4, 5: 1, 6: 1, 7: 1}
+    q_dict = {0: 1, 1: 0, 2: 0, 3: q_3, 4: q_4, 5: 1, 6: 1, 7: 1}
+    z_dict = {}
+    return p_dict, q_dict, z_dict, clauses
+
+
+def factor_291311():
+    clauses = []
+    p_1 = Symbol('p_1')
+    p_2 = Symbol('p_2')
+    p_5 = Symbol('p_5')
+    q_1 = Symbol('q_1')
+    q_2 = Symbol('q_2')
+    q_5 = Symbol('q_5')
+
+    clauses.append(p_1 + q_1 - 1)
+    clauses.append(p_2 + q_2 - 1)
+    clauses.append(p_5 + q_5 - 1)
+    clauses.append(p_1*q_2 + p_2*q_1 - 1)
+    clauses.append(p_2*q_5 + p_5*q_2 - 1)
+    clauses.append(p_5*q_1 + q_5*p_1 - 1)
+
+    p_dict = {0: 1, 1: p_1, 2: p_2, 3: 1, 4: 0, 5: p_5, 6: 0, 7: 0, 8: 0, 9: 1}
+    q_dict = {0: 1, 1: q_1, 2: q_2, 3: 1, 4: 0, 5: q_5, 6: 0, 7: 0, 8: 0, 9: 1}
+    z_dict = {}
+    return p_dict, q_dict, z_dict, clauses
