@@ -137,9 +137,9 @@ def main():
                 print(squared_overlap)
                 results.append([m, steps, squared_overlap, bfgs_evaluations])
 
-                optimization_history = optimization_engine.optimization_history
-                history_file_name = "_".join([str(m), str(steps), str(i), "history"]) + ".csv"
-                np.savetxt(history_file_name, optimization_history, delimiter=",")
+                # optimization_history = optimization_engine.optimization_history
+                # history_file_name = "_".join([str(m), str(steps), str(i), "history"]) + ".csv"
+                # np.savetxt(history_file_name, optimization_history, delimiter=",")
             np.savetxt("results.csv", results, delimiter=",", header="m,steps,squared_overlap,bfgs_evaluations", fmt='%.4f', comments='')
 
 if __name__ == '__main__':
