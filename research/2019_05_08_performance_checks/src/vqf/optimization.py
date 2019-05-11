@@ -5,7 +5,8 @@ import pyquil.quil as pq
 from pyquil.gates import X, I
 import scipy.optimize
 import numpy as np
-from grove.pyvqe.vqe import VQE
+# from grove.pyvqe.vqe import VQE
+from .vqe import VQE
 from functools import reduce
 from .visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
 from sympy import Add, Mul, Number
@@ -173,11 +174,11 @@ class OptimizationEngine(object):
         self.step_by_step_results = [betas, gammas]
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
-        betas, gammas = self.get_angles()
+        betas, gammas, bfgs_evaluations = self.get_angles()
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
         _, sampling_results = self.qaoa_inst.get_string(betas, gammas, samples=10000)    
-        return sampling_results, self.mapping
+        return sampling_results, self.mapping, bfgs_evaluations
 
     def get_angles(self):
         """
@@ -195,10 +196,11 @@ class OptimizationEngine(object):
         cost_ham = reduce(lambda x, y: x + y, self.qaoa_inst.cost_ham)
         # maximizing the cost function!
         param_prog = self.qaoa_inst.get_parameterized_program()
-        result = vqe.vqe_run(param_prog, cost_ham, stacked_params, qvm=self.qaoa_inst.qvm,
+        result, bfgs_evaluations = vqe.vqe_run(param_prog, cost_ham, stacked_params, qc=self.qaoa_inst.qvm,
                              **self.qaoa_inst.vqe_options)
         best_betas = result.x[:self.qaoa_inst.steps]
         best_gammas = result.x[self.qaoa_inst.steps:]
+
         optimization_trajectory = result.iteration_params
         energy_history = result.expectation_vals
 
@@ -207,7 +209,7 @@ class OptimizationEngine(object):
 
         self.optimization_history = np.hstack([np.array(optimization_trajectory), np.array([energy_history]).T])
 
-        return best_betas, best_gammas
+        return best_betas, best_gammas, bfgs_evaluations
 
     def simple_grid_search_angles(self, save_data=False):
         """
