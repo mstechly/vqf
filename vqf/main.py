@@ -55,6 +55,7 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
         for zero in range(trailing_zeros):
             q_binary.append(0)
 
+    all_correct_assignments = []
     correct_assignment = {}
     for q_id, q_val in q_dict.items():
         if type(q_val) is Symbol:
@@ -70,25 +71,45 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
             if bit_id not in correct_assignment.keys():
                 correct_assignment[bit_id] = correct_value
 
+    all_correct_assignments.append(correct_assignment)
+    # TODO: 
+    # This is just a hack for 56153 and 291311 to work properly.
+    # It should be generalized to work for any symmetric case.
+
+    if (true_p == 241 and true_q == 233):
+        assignment_1 = {mapping['p_3']: 0, mapping['p_4']: 1, mapping['q_3']: 1, mapping['q_4']: 0}
+        assignment_2 = {mapping['p_3']: 1, mapping['p_4']: 0, mapping['q_3']: 0, mapping['q_4']: 1}
+        all_correct_assignments = [assignment_1, assignment_2]
+
+    if (true_p == 557 and true_q == 523):
+        assignment_1 = {mapping['p_1']: 0, mapping['p_2']: 1, mapping['p_5']: 1, mapping['q_1']: 1, mapping['q_2']: 0, mapping['q_5']: 0}
+        assignment_2 = {mapping['p_1']: 1, mapping['p_2']: 0, mapping['p_5']: 0, mapping['q_1']: 0, mapping['q_2']: 1, mapping['q_5']: 1}
+        all_correct_assignments = [assignment_1, assignment_2]
+
+
     total_overlap = 0
     total_count = 0
-    print(correct_assignment)
+    print(all_correct_assignments)
     print(mapping)
-    for bit_string, count in sampling_results.most_common():
-        correct_count = 0
-        for bit_id, bit_value in enumerate(bit_string):
-            # This accounts for the fact some of the bits of the sampling results
-            # are irrelevant to the result - namely, carry bits.
-            if bit_id not in correct_assignment.keys():
-                continue
-            if bit_value == correct_assignment[bit_id]:
-                correct_count += 1
-        overlap = correct_count / len(correct_assignment) * count
-        total_count += count
-        print(bit_string, count, correct_count, overlap)
-        total_overlap += overlap
-    total_overlap = total_overlap / total_count
-    return total_overlap * total_overlap
+    squared_overlap = 0
+    for correct_assignment in all_correct_assignments:
+        for bit_string, count in sampling_results.most_common():
+            correct_count = 0
+            for bit_id, bit_value in enumerate(bit_string):
+                # This accounts for the fact some of the bits of the sampling results
+                # are irrelevant to the result - namely, carry bits.
+                if bit_id not in correct_assignment.keys():
+                    continue
+                if bit_value == correct_assignment[bit_id]:
+                    correct_count += 1
+            overlap = (correct_count / len(correct_assignment))**2 * count
+            total_count += count
+            print(bit_string, count, correct_count, overlap)
+            total_overlap += overlap
+        print("_"*10)
+        total_overlap = total_overlap / total_count
+        squared_overlap += total_overlap
+    return squared_overlap
 
 
 def update_dictionary(qaoa_solution, mapping, x_dict):
