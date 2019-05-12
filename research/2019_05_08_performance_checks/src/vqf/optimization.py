@@ -1,22 +1,26 @@
 import pyquil.api as api
+from pyquil.api._qvm import ForestConnection, QVM
+from pyquil.device import NxDevice
+from pyquil.api._quantum_computer import QuantumComputer   
+from pyquil.api._compiler import QVMCompiler
 from grove.pyqaoa.qaoa import QAOA
 from pyquil.paulis import PauliTerm, PauliSum
-import pyquil.quil as pq
 from pyquil.gates import X, I
-import scipy.optimize
-import numpy as np
 # from grove.pyvqe.vqe import VQE
 from .vqe import VQE
+
+import scipy.optimize
+import numpy as np
+import networkx as nx
 from functools import reduce
-from .visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
 from sympy import Add, Mul, Number
 from itertools import product
 import time
 
+from .visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
+
 import pdb
 
-def pass_fun(arg):
-    pass
 
 class OptimizationEngine(object):
     """
@@ -31,6 +35,7 @@ class OptimizationEngine(object):
         steps (int, optional): Number of steps in the QAOA algorithm. Default: 1
         grid_size (int, optional): The resolution of the grid for grid search. Default: None
         tol (float, optional): Parameter of BFGS optimization method. Gradient norm must be less than tol before successful termination. Default:1e-5
+        gate_noise (float, optional): Specifies gate noise for qvm. Default: None.
         verbose (bool): Boolean flag, if True, information about the execution will be printed to the console. Default: False
         visualize (bool): Flag indicating if visualizations should be created. Default: False
 
@@ -39,15 +44,18 @@ class OptimizationEngine(object):
         grid_size (int): See Args.
         mapping (dict): Maps variables into qubit indices.
         qaoa_inst (object): Instance of QAOA class from Grove.
+        samples (int): If noise model is active, specifies how many samples we should take for any given quantum program.
+        ax (object): Matplotlib `axis` object, used for plotting optimization trajectory.
 
     """
-    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, verbose=False, visualize=False):
+    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, gate_noise=None, verbose=False, visualize=False):
         self.clauses = clauses
         self.m = m
         self.verbose = verbose
         self.visualize = visualize
         self.step_by_step_results = None
         self.optimization_history = None
+        self.gate_noise = gate_noise
         if grid_size is None:
             self.grid_size = len(clauses) + len(qubits)
         else:
@@ -62,12 +70,31 @@ class OptimizationEngine(object):
             print_fun = print
         else:
             print_fun = pass_fun
-        vqe_option = {'disp': print_fun, 'return_all': True,
-                      'samples': None}
 
         qubits = list(range(len(mapping)));
 
-        self.qaoa_inst = QAOA(api.QVMConnection(), 
+        if gate_noise:
+            self.samples = int(1e3)
+            pauli_channel = [gate_noise] * 3
+        else:
+            self.samples = None
+            pauli_channel = None
+        connection = ForestConnection()
+        qvm = QVM(connection=connection, gate_noise=pauli_channel)
+        topology = nx.complete_graph(len(qubits))
+        device = NxDevice(topology=topology)
+        qc = QuantumComputer(name="my_qvm",
+                       qam=qvm,
+                       device=device,
+                       compiler=QVMCompiler(
+                           device=device,
+                           endpoint=connection.compiler_endpoint))
+
+        vqe_option = {'disp': print_fun, 'return_all': True,
+                      'samples': self.samples}
+
+
+        self.qaoa_inst = QAOA(qc, 
                           qubits, 
                           steps=steps, 
                           init_betas=None, 
@@ -196,7 +223,7 @@ class OptimizationEngine(object):
         cost_ham = reduce(lambda x, y: x + y, self.qaoa_inst.cost_ham)
         # maximizing the cost function!
         param_prog = self.qaoa_inst.get_parameterized_program()
-        result, bfgs_evaluations = vqe.vqe_run(param_prog, cost_ham, stacked_params, qc=self.qaoa_inst.qvm,
+        result, bfgs_evaluations = vqe.vqe_run(param_prog, cost_ham, stacked_params, qc=self.qaoa_inst.qc,
                              **self.qaoa_inst.vqe_options)
         best_betas = result.x[:self.qaoa_inst.steps]
         best_gammas = result.x[self.qaoa_inst.steps:]
@@ -253,7 +280,7 @@ class OptimizationEngine(object):
             for gammas in all_gammas:
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
-                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, self.qaoa_inst.qvm)
+                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc)
                 all_energies.append(energy)
                 if self.verbose:
                     print(betas, gammas, energy, end="\r")
@@ -350,9 +377,8 @@ class OptimizationEngine(object):
                 gammas = np.append(fixed_gammas, gamma)
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
-                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, None, self.qaoa_inst.qvm)
-                if self.verbose:
-                    print(beta, gamma, end="\r")
+                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc)
+                print(beta, gamma, end="\r")
                 if energy < best_energy:
                     best_energy = energy
                     best_beta = beta

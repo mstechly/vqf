@@ -130,7 +130,7 @@ def main():
         for steps in range(1, 9):
             for i in range(3):
                 print(m, steps, i)                
-                optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, verbose=optimization_verbose, visualize=False)
+                optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, gate_noise=1e-3, verbose=optimization_verbose, visualize=False)
                 optimization_engine.step_by_step_results = step_by_step_results
                 squared_overlap, bfgs_evaluations, step_by_step_results = run_single_case(p_q_info, optimization_engine)
                 
