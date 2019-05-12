@@ -74,7 +74,7 @@ class OptimizationEngine(object):
         qubits = list(range(len(mapping)));
 
         if gate_noise:
-            self.samples = int(1e3)
+            self.samples = int(1e4)
             pauli_channel = [gate_noise] * 3
         else:
             self.samples = None
