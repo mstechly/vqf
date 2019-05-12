@@ -26,7 +26,7 @@ def factor_number(m, true_p, true_q, use_true_values=False):
             p, q = decode_solution(p_dict, q_dict)
             return p, q, None
 
-    optimization_engine = OptimizationEngine(clauses, m, steps=1, grid_size=5, verbose=optimization_verbose, visualize=True)
+    optimization_engine = OptimizationEngine(clauses, m, steps=1, grid_size=20, gate_noise=None, verbose=optimization_verbose, visualize=True)
     sampling_results, mapping = optimization_engine.perform_qaoa()
     most_frequent_bit_string = max(sampling_results, key=lambda x: sampling_results[x])
     
@@ -142,8 +142,6 @@ def main():
         true_q = p_q_m[1]
         m = p_q_m[2]
         use_true_values = True
-        if m == 35 or m == 51:
-            use_true_values = False
 
         print("M:", m)
         if m % 2 == 0:
