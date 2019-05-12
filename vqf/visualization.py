@@ -122,8 +122,8 @@ def plot_optimization_trajectory(ax, optimization_trajectory):
         gammas = optimization_trajectory[:, 1]
         ax.plot(betas[0], gammas[0], 'g*')
         ax.plot(betas, gammas, 'g')
-        start_time = time.time()
-    plt.savefig("optimization_trajectory_"+str(start_time)+'.png')
+    timestamp = time.time()
+    plt.savefig("optimization_trajectory_"+str(timestamp)+'.png')
 
 
 def preprocess(x, y):
