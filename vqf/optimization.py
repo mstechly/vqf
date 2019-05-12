@@ -16,7 +16,6 @@ from sympy import Add, Mul, Number
 from itertools import product
 import time
 
-from preprocessing import create_clauses
 from visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
 
 import pdb
@@ -353,7 +352,7 @@ class OptimizationEngine(object):
                 gammas = np.append(fixed_gammas, gamma)
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
-                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc, self.samples)
+                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc)
                 print(beta, gamma, end="\r")
                 if energy < best_energy:
                     best_energy = energy
