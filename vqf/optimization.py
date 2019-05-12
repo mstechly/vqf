@@ -60,7 +60,7 @@ class OptimizationEngine(object):
 
         cost_operators, mapping = self.create_operators_from_clauses()
         self.mapping = mapping
-        driver_operators = self.create_driver_operators()
+        mixing_operators = self.create_mixing_operators()
         minimizer_kwargs = {'method': 'BFGS',
                                 'options': {'gtol': tol, 'disp': False}}
         if self.verbose:
@@ -97,7 +97,7 @@ class OptimizationEngine(object):
                           init_betas=None, 
                           init_gammas=None,
                           cost_ham=cost_operators,
-                          ref_ham=driver_operators, 
+                          ref_ham=mixing_operators, 
                           minimizer=scipy.optimize.minimize,
                           minimizer_kwargs=minimizer_kwargs,
                           rand_seed=None,
@@ -172,17 +172,17 @@ class OptimizationEngine(object):
 
         return operators, mapping
 
-    def create_driver_operators(self):
+    def create_mixing_operators(self):
         """
-        Creates driver hamiltonian.
+        Creates mixing hamiltonian. (eq. 10)
         """
 
-        driver_operators = []
+        mixing_operators = []
         
         for key, value in self.mapping.items():
-            driver_operators.append(PauliSum([PauliTerm("X", value, -1.0)]))
+            mixing_operators.append(PauliSum([PauliTerm("X", value, -1.0)]))
 
-        return driver_operators
+        return mixing_operators
 
     def perform_qaoa(self):
         """
