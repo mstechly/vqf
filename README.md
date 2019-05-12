@@ -6,6 +6,16 @@ This repository contains implementation of the algorithm presented in the articl
 
 The notation in the code refers directly to the notation in the paper.
 
+### Requirements
+
+This project relies heavily on `pyquil` and `grove` libraries. Unfortunately, at the time I was developing this project, released versions had bugs that were critical for this project.
+Therefore, I've installed them from source:
+- pyquil, commit-sha: `f22a851d5803e0a6aa73b236c25d28a5fcdb0116`
+- grove, commit-sha: `dc6bf6ec63e8c435fe52b1e00f707d5ce4cdb9b3`
+
+All the packages that don't get installed automatically during instalation of pyquil and grove are listed in the `requirements.txt` file. ]
+List of all the installed packages that has been used for this project can be found in `pip_freeze.txt`.
+
 ## Differences from the paper
 
 Below you can find a list of points where I'm aware that my implementation differs from the one provided in the paper.
