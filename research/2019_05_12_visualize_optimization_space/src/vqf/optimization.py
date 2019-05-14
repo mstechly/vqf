@@ -16,10 +16,12 @@ from sympy import Add, Mul, Number
 from itertools import product
 import time
 
-from visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
+from .visualization import plot_energy_landscape, plot_variance_landscape, plot_optimization_trajectory
 
 import pdb
 
+def pass_fun(arg):
+    pass
 
 class OptimizationEngine(object):
     """
@@ -47,12 +49,13 @@ class OptimizationEngine(object):
         ax (object): Matplotlib `axis` object, used for plotting optimization trajectory.
 
     """
-    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, gate_noise=None, verbose=False, visualize=False):
+    def __init__(self, clauses, m=None, steps=1, grid_size=None, tol=1e-5, gate_noise=None, samples=None, verbose=False, visualize=False):
         self.clauses = clauses
         self.m = m
         self.verbose = verbose
         self.visualize = visualize
         self.gate_noise = gate_noise
+        self.samples = samples
         if grid_size is None:
             self.grid_size = len(clauses) + len(qubits)
         else:
@@ -71,10 +74,8 @@ class OptimizationEngine(object):
         qubits = list(range(len(mapping)));
 
         if gate_noise:
-            self.samples = int(1e3)
             pauli_channel = [gate_noise] * 3
         else:
-            self.samples = None
             pauli_channel = None
         connection = ForestConnection()
         qvm = QVM(connection=connection, gate_noise=pauli_channel)
@@ -228,7 +229,7 @@ class OptimizationEngine(object):
             plot_optimization_trajectory(self.ax, optimization_trajectory)
         return best_betas, best_gammas
 
-    def simple_grid_search_angles(self, save_data=False):
+    def simple_grid_search_angles(self, label, save_data=False):
         """
         Finds optimal angles for QAOA by performing grid search on all the angles.
         This is not recommended for higher values of steps parameter, 
@@ -265,15 +266,14 @@ class OptimizationEngine(object):
         all_energies = []
         data_to_save = []
         if save_data:
-            file_name = "_".join([str(self.m), "grid", str(self.grid_size), str(time.time())]) + ".csv"
+            file_name = label + ".csv"
         for betas in all_betas:
             for gammas in all_gammas:
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
                 energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc)
                 all_energies.append(energy)
-                if self.verbose:
-                    print(betas, gammas, energy, end="\r")
+                print(betas, gammas, energy, end="\r")
                 if save_data:
                     data_to_save.append(np.hstack([betas, gammas, energy]))
                 if energy < best_energy:
@@ -288,7 +288,8 @@ class OptimizationEngine(object):
 
         if self.visualize:
             if self.qaoa_inst.steps == 1:
-                self.ax = plot_energy_landscape(all_betas, all_gammas, np.array(all_energies), log_legend=True)
+                self.ax = plot_energy_landscape(all_betas, all_gammas, np.array(all_energies), title=label, log_legend=False)
+                self.ax = plot_energy_landscape(all_betas, all_gammas, np.array(all_energies), title=label+"_log", log_legend=True)
             else:
                 plot_variance_landscape(all_betas, all_gammas, np.array(all_energies))
 

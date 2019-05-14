@@ -4,12 +4,12 @@ import matplotlib.ticker as tck
 from matplotlib.colors import LogNorm
 import pdb
 import time
+import os
 
 
-def plot_energy_landscape(x, y, values, log_legend=False, title=None, legend_title=None, legend_min=0, legend_max=None):
+def plot_energy_landscape(x, y, values, log_legend=False, title=None, dir_path=None, legend_title=None, legend_min=0, legend_max=None):
     # Clearing the canvas, so we always draw on the empty canvas. Just in case.
     plt.clf()
-
     x, y = preprocess(x, y)
     fig, ax = plt.subplots()
     XX, YY = np.meshgrid(x, y)
@@ -53,7 +53,11 @@ def plot_energy_landscape(x, y, values, log_legend=False, title=None, legend_tit
         legend_title = "energy"
     cbar.set_label(legend_title)
 
-    plt.savefig(title)
+    file_path = title
+    if dir_path != None:
+        file_path = os.path.join(dir_path, file_path)
+    plt.savefig(file_path)
+    plt.close()
     return ax
 
 
