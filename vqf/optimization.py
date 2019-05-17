@@ -6,7 +6,8 @@ from pyquil.api._compiler import QVMCompiler
 from grove.pyqaoa.qaoa import QAOA
 from pyquil.paulis import PauliTerm, PauliSum
 from pyquil.gates import X, I
-from grove.pyvqe.vqe import VQE
+# from grove.pyvqe.vqe import VQE
+from vqe import VQE
 
 import scipy.optimize
 import numpy as np
@@ -130,12 +131,8 @@ class OptimizationEngine(object):
                 clause_terms = [clause]
             for single_term in clause_terms:
                 if len(single_term.free_symbols) == 0:
-                    if self.verbose:
-                        print("Constant term", single_term)
                     pauli_terms.append(PauliTerm("I", 0, int(single_term)))
                 elif len(single_term.free_symbols) == 1:
-                    if self.verbose:
-                        print("Single term", single_term)
                     multiplier = 1
                     if type(single_term) == Mul:
                         multiplier = int(single_term.args[0])
@@ -144,8 +141,6 @@ class OptimizationEngine(object):
                     pauli_terms.append(PauliTerm("I", symbol_id, 1/2*multiplier))
                     pauli_terms.append(PauliTerm("Z", symbol_id, -1/2*multiplier))
                 elif len(single_term.free_symbols) == 2 and type(single_term) == Mul:
-                    if self.verbose:
-                        print("Double term", single_term)
                     multiplier = 1
                     if isinstance(single_term.args[0], Number):
                         multiplier = int(single_term.args[0])
@@ -193,8 +188,8 @@ class OptimizationEngine(object):
             mapping (dict): See class description.
 
         """
-        betas, gammas = self.simple_grid_search_angles(save_data=True)
-        # betas, gammas = self.step_by_step_grid_search_angles()
+        # betas, gammas = self.simple_grid_search_angles(save_data=True)
+        betas, gammas = self.step_by_step_grid_search_angles()
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
         betas, gammas = self.get_angles()
