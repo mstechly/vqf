@@ -7,10 +7,10 @@ import pdb
 import gc
 
 def main():
-    p_q_m_list = [[283, 7, 1981], [29, 11, 319], [263, 263, 69169], [263, 11, 2893], [241, 233, 56153], [557, 523, 291311]]
+    p_q_m_list = [[283, 7, 1981], [263, 11, 2893], [241, 233, 56153], [557, 523, 291311], [29, 11, 319], [263, 263, 69169]]
     results = []
-    unknowns_list = [[2, 0], [6, 3], [8, 5], [3, 1], [4, 0], [6, 0]]
-    for p_q_m, grid_size, unknowns in zip(p_q_m_list, grid_sizes, unknowns_list):
+    unknowns_list = [[2, 0], [3, 1], [4, 0], [6, 0], [6, 3], [8, 5]]
+    for p_q_m, unknowns in zip(p_q_m_list, unknowns_list):
         true_p = p_q_m[0]
         true_q = p_q_m[1]
         m = p_q_m[2]

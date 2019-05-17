@@ -6,7 +6,8 @@ from pyquil.api._compiler import QVMCompiler
 from grove.pyqaoa.qaoa import QAOA
 from pyquil.paulis import PauliTerm, PauliSum
 from pyquil.gates import X, I
-from grove.pyvqe.vqe import VQE
+# from grove.pyvqe.vqe import VQE
+from .vqe import VQE
 
 import scipy.optimize
 import numpy as np
