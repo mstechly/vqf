@@ -81,6 +81,8 @@ def test_apply_z_rule_2():
     known_expressions = preprocessing.apply_z_rule_2(clause, known_expressions)
     ## Then
     assert known_expressions[q] == 1
+    #TODO:
+    # assert known_expressions[z] == 1
 
     ## Given
     known_expressions = {}
