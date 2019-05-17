@@ -89,9 +89,12 @@ def calculate_squared_overlap(mapping, sampling_results, true_p, true_q, p_dict,
 
     total_overlap = 0
     total_count = 0
+    print("Correct assignments:")
     print(all_correct_assignments)
+    print("Variables mapping")
     print(mapping)
     squared_overlap = 0
+    print("Sample, count, correct, sq_overlap")
     for correct_assignment in all_correct_assignments:
         for bit_string, count in sampling_results.most_common():
             correct_count = 0

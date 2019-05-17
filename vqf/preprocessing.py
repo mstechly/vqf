@@ -105,6 +105,7 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
             raise Exception("Clause is a number and is not equal to 0!")
 
     if verbose:
+        print("Final clauses:")
         for clause in final_clauses:
             print(clause)
 
@@ -146,6 +147,8 @@ def simplify_clauses(clauses, verbose=True):
         if counter == 0:
             should_continue = True
         counter += 1
+        if verbose:
+            print("\n")
 
     return simplified_clauses, known_expressions
 
@@ -913,6 +916,7 @@ def extract_unknowns(x_dict):
 
     unknowns = list(set(list_of_variables))
     return unknowns
+
 
 def factor_56153():
     clauses = []
