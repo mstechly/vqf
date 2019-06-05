@@ -41,6 +41,12 @@ What I mean by deterministic results is the fact, that no matter how many times 
 
 This probably comes from the absence of noise, and I will try to confirm it in the next experiment.
 
+### Optimization algorithms used
+I have used two optimization algorithms - BFGS and L-BFGS-B.
+In the case of the second one, the values for betas and gammas were bounded to (0, pi) and (0, 2\*pi) respectively.
+
+For L-BFGS-B the result for 291311 and 8 layers is missing, due to errors in `quilc`.
+
 
 ## Results
 
@@ -64,24 +70,38 @@ The reason for this is unknown and should be investigated.
 
 ### Observation 5
 
-This implementation requires much, much higher number of BFGS evaluations. Scaling with the number of layers also seems to scale worse than linearly, though there is too little data to draw definite conclusions.
+When regular BFGS was used, it required, much higher number of BFGS function evaluations. Scaling with the number of layers also seems to scale worse than linearly, though there is too little data to draw definite conclusions.
 It's unclear to me where does the discrepancy in this regard comes from, perhaps from using different implementations of BFGS (I have used scipy implementation).
 
 ### Observation 6
 
+When L-BFGS-B was used, the number of BFGS function evaluations was much smaller (except the obviuos outliers). The numbers slightly higher, but similar to those from the original paper.
+
+### Observation 7
+
 In most (if not all) cases, the BFGS optimization ended with the error message: `Classical optimization exited with an error index: 2`. I was not able to find what "error index: 2" means, and it returns reasonable parameters, so it's hard to say what exactly doesn't work.
+
+### Observation 8
+The results obtained using BFGS and L-BFGS-B method are very similar - the only difference being the results for number 2893. This proves the importance of using the right optimization method.
 
 ### Original squared overlap plot (Figure 2)
 ![](figures/squared_overlap_original.png)
 
-### Reproduced squared overlap plot 
+### Reproduced squared overlap plot (BFGS)
 ![](figures/squared_overlap.png)
+
+### Reproduced squared overlap plot (L-BFGS-B)
+![](figures/squared_overlap_2.png)
 
 ### Original BFGS evaluations plot (Figure 3)
 ![](figures/bfgs_evaluations_original.png)
 
-### Reproduced BFGS evaluations plot
+### Reproduced BFGS evaluations plot (BFGS)
 ![](figures/bfgs_evaluations.png)
+
+### Reproduced BFGS evaluations plot (L-BFGS-B)
+![](figures/bfgs_evaluations_2.png)
+
 
 
 ## Conclusions
@@ -89,3 +109,4 @@ In most (if not all) cases, the BFGS optimization ended with the error message: 
 - This implementation of the VQF algorithm gives good results.
 - The one exception to the statement above is for number 291311.
 - There are reasons to think that the classical optimization (BFGS) needs improvement.
+- Looking at the number of function evaluations, it's possible that the original research used L-BFGS-B method.

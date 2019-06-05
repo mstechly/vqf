@@ -21,6 +21,8 @@ from .visualization import plot_energy_landscape, plot_variance_landscape, plot_
 
 import pdb
 
+def pass_fun(arg):
+    pass
 
 class OptimizationEngine(object):
     """
@@ -61,11 +63,17 @@ class OptimizationEngine(object):
         else:
             self.grid_size = grid_size
 
+        
         cost_operators, mapping = self.create_operators_from_clauses()
         self.mapping = mapping
         driver_operators = self.create_driver_operators()
-        minimizer_kwargs = {'method': 'BFGS',
-                                'options': {'gtol': tol, 'disp': False}}
+        # minimizer_kwargs = {'method': 'BFGS',
+        #                         'options': {'gtol': tol, 'disp': False}}
+        bounds = [(0, np.pi)]*steps + [(0, 2*np.pi)]*steps
+        minimizer_kwargs = {'method': 'L-BFGS-B',
+                                'options': {'gtol': tol, 'disp': False},
+                                'bounds': bounds}
+
         if self.verbose:
             print_fun = print
         else:
