@@ -16,7 +16,7 @@ def main():
         m = p_q_m[2]
         apply_preprocessing = True
         preprocessing_verbose = False
-        optimization_verbose = True
+        optimization_verbose = False
         number_of_unknowns = 0
         carry_bits = 0
         counter = 0
@@ -30,24 +30,28 @@ def main():
 
         if number_of_unknowns != unknowns[0] or carry_bits != unknowns[1]:
             print("Got wrong number of unknowns!")
+            pdb.set_trace()
             continue
 
         p_q_info = [true_p, true_q, p_dict, q_dict]
-        step_by_step_results = None
-        for steps in range(1, 9):
-            for i in range(3):
-                print(m, steps, i)                
-                optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, gate_noise=1e-3, verbose=optimization_verbose, visualize=False)
-                optimization_engine.step_by_step_results = step_by_step_results
-                squared_overlap, bfgs_evaluations, step_by_step_results = run_single_case(p_q_info, optimization_engine)
-                
-                print(squared_overlap)
-                results.append([m, steps, squared_overlap, bfgs_evaluations])
-
-                # optimization_history = optimization_engine.optimization_history
-                # history_file_name = "_".join([str(m), str(steps), str(i), "history"]) + ".csv"
-                # np.savetxt(history_file_name, optimization_history, delimiter=",")
-            np.savetxt("results.csv", results, delimiter=",", header="m,steps,squared_overlap,bfgs_evaluations", fmt='%.4f', comments='')
+        steps = 1
+        grid_size = 200
+        for i in range(1):
+            for gate_noise in [None]:#[1e-4, 1e-3, 1e-2]:
+                for samples in [None]:#[1e2, 1e3]:
+                    if samples is not None:
+                        samples = int(samples)
+                    print(m, gate_noise, samples, i, "     ")
+                    optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, gate_noise=gate_noise, samples=samples, verbose=optimization_verbose, visualize=True)
+                    if gate_noise is None:
+                        gate_noise_str = '0'
+                    else:
+                        gate_noise_str = str(gate_noise).split('.')[1]
+                    label = "_".join([str(m), "noise", gate_noise_str, "samples", str(samples), "i", str(i)])
+                    optimization_engine.simple_grid_search_angles(label=label, save_data=True)
+                    del optimization_engine
+                    gc.collect()
+                    
 
 if __name__ == '__main__':
     main()
