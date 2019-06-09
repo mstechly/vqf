@@ -34,6 +34,7 @@ def main():
         fig_0.savefig("squared_overlap_" + name)
         fig_1.savefig("evaluations_" + name)
 
+
 def create_plots(ax_0, ax_1, results_df, linestyle):
     color_dict = {1981: 'tab:blue', 319: 'tab:orange', 69169: 'tab:green', 2893: 'tab:red', 56153: 'tab:purple', 291311: 'tab:brown'}
     for m in results_df.m.unique():
