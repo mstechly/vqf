@@ -69,10 +69,14 @@ class OptimizationEngine(object):
         driver_operators = self.create_driver_operators()
         # minimizer_kwargs = {'method': 'BFGS',
         #                         'options': {'gtol': tol, 'disp': False}}
-        bounds = [(0, np.pi)]*steps + [(0, 2*np.pi)]*steps
-        minimizer_kwargs = {'method': 'L-BFGS-B',
-                                'options': {'gtol': tol, 'disp': False},
-                                'bounds': bounds}
+        # bound_eps = 1e-10
+        # bounds = [(bound_eps, np.pi-bound_eps)]*steps + [(bound_eps, 2*np.pi-bound_eps)]*steps
+        # minimizer_kwargs = {'method': 'L-BFGS-B',
+        #                         'options': {'gtol': tol, 'disp': False},
+        #                         'bounds': bounds}
+        minimizer_kwargs = {'method': 'Nelder-Mead',
+                        'options': {'ftol': tol, 'tol': tol, 'disp': False}}
+
 
         if self.verbose:
             print_fun = print
@@ -82,7 +86,7 @@ class OptimizationEngine(object):
         qubits = list(range(len(mapping)));
 
         if gate_noise:
-            self.samples = int(1e4)
+            self.samples = int(1e3)
             pauli_channel = [gate_noise] * 3
         else:
             self.samples = None
@@ -212,7 +216,10 @@ class OptimizationEngine(object):
         betas, gammas, bfgs_evaluations = self.get_angles()
         self.qaoa_inst.betas = betas
         self.qaoa_inst.gammas = gammas
-        _, sampling_results = self.qaoa_inst.get_string(betas, gammas, samples=10000)    
+        try:
+            _, sampling_results = self.qaoa_inst.get_string(betas, gammas, samples=10000)
+        except:
+            pdb.set_trace()
         return sampling_results, self.mapping, bfgs_evaluations
 
     def get_angles(self):
@@ -242,7 +249,10 @@ class OptimizationEngine(object):
         if self.ax is not None and self.visualize and self.qaoa_inst.steps==1:
             plot_optimization_trajectory(self.ax, optimization_trajectory)
 
-        self.optimization_history = np.hstack([np.array(optimization_trajectory), np.array([energy_history]).T])
+        if len(optimization_trajectory) != 0 and len(energy_history) != 0:
+            self.optimization_history = np.hstack([np.array(optimization_trajectory), np.array([energy_history]).T])
+        else:
+            self.optimization_history = np.array([])
 
         return best_betas, best_gammas, bfgs_evaluations
 
@@ -288,7 +298,7 @@ class OptimizationEngine(object):
             for gammas in all_gammas:
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
-                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc)
+                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc, stacked_params)
                 all_energies.append(energy)
                 if self.verbose:
                     print(betas, gammas, energy, end="\r")
@@ -385,7 +395,7 @@ class OptimizationEngine(object):
                 gammas = np.append(fixed_gammas, gamma)
                 stacked_params = np.hstack((betas, gammas))
                 program = self.qaoa_inst.get_parameterized_program()
-                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc)
+                energy = vqe.expectation(program(stacked_params), cost_hamiltonian, self.samples, self.qaoa_inst.qc, stacked_params)
                 print(beta, gamma, end="\r")
                 if energy < best_energy:
                     best_energy = energy

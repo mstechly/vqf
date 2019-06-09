@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pdb
 
 def main():
-    results_df = pd.read_csv("results.csv", delimiter=",")
+    results_df = pd.read_csv("results_nm.csv", delimiter=",")
     fig_0, ax_0 = plt.subplots()
     fig_1, ax_1 = plt.subplots()
     for m in results_df.m.unique():

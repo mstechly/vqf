@@ -16,6 +16,8 @@ This, however, differed from the original research in some respects:
 
 I used the same grid sizes as those provided in Table 1 in the original paper.
 
+Later I have also added results for Nelder-Mead method, but they seem inferior to the BFGS methods, hence I didn't bother with describing them - however, they are available in the `results` directory.
+
 ### 1. Number differences
 
 Since differente preprocessing scheme was used, it was not possible to use the exact same number as in the original paper. Therefore I decided to choose numbers that required similar amount of resources. The only exception were numbers 56153 and 291311, since they used different preprocessing scheme proposed in [Quantum factorization of 56153 with only 4 qubits](https://arxiv.org/pdf/1411.6758.pdf). Since the claused proposed in this paper were pretty simple, I hope my implementation is the exact copy of the one from the article.

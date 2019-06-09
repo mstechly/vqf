@@ -146,7 +146,7 @@ class VQE(object):
             :return: (float) expectation value
             """
             pyquil_prog = variational_state_evolve(params)
-            mean_value = self.expectation(pyquil_prog, hamiltonian, samples, qc)
+            mean_value = self.expectation(pyquil_prog, hamiltonian, samples, qc, initial_params)
             self._current_expectation = mean_value  # store for printing
             self.number_of_evaluations += 1
             return mean_value
@@ -197,7 +197,8 @@ class VQE(object):
     def expectation(pyquil_prog: Program,
                     pauli_sum: Union[PauliSum, PauliTerm, np.ndarray],
                     samples: int,
-                    qc: QuantumComputer) -> float:
+                    qc: QuantumComputer,
+                    stacked_params: np.ndarray) -> float:
         """
         Compute the expectation value of pauli_sum over the distribution generated from pyquil_prog.
 
@@ -238,6 +239,7 @@ class VQE(object):
                 # normal execution via fake sampling
                 # stores the sum of contributions to the energy from each operator term
                 expectation = 0.0
+
                 for j, term in enumerate(pauli_sum.terms):
                     meas_basis_change = Program()
                     qubits_to_measure = []
@@ -255,7 +257,8 @@ class VQE(object):
                             expectation_from_sampling(pyquil_prog + meas_basis_change,
                                                       qubits_to_measure,
                                                       qc,
-                                                      samples)
+                                                      samples,
+                                                      stacked_params)
 
                     expectation += term.coefficient * meas_outcome
 
@@ -283,7 +286,8 @@ def parity_even_p(state, marked_qubits):
 def expectation_from_sampling(pyquil_program: Program,
                               marked_qubits: List[int],
                               qc: QuantumComputer,
-                              samples: int) -> float:
+                              samples: int,
+                              stacked_params: np.ndarray) -> float:
     """
     Calculation of Z_{i} at marked_qubits
 
@@ -303,7 +307,12 @@ def expectation_from_sampling(pyquil_program: Program,
     program += pyquil_program
     program += [MEASURE(qubit, r) for qubit, r in zip(list(range(max(marked_qubits) + 1)), ro)]
     program.wrap_in_numshots_loop(samples)
-    executable = qc.compile(program)
+    try:
+        executable = qc.compile(program)
+    except:
+        import pdb
+        pdb.set_trace()
+
     bitstring_samples = qc.run(executable)
     bitstring_tuples = list(map(tuple, bitstring_samples))
 

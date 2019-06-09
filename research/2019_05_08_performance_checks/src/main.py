@@ -97,19 +97,22 @@ def calculate_squared_overlap(mapping, sampling_results, p_q_info, verbose=False
 
 
 def main():
-    p_q_m_list = [[283, 7, 1981], [29, 11, 319], [263, 263, 69169], [263, 11, 2893], [241, 233, 56153], [557, 523, 291311]]
     results = []
-    grid_sizes = [6, 24, 36, 9, 12, 24]
-    unknowns_list = [[2, 0], [6, 3], [8, 5], [3, 1], [4, 0], [6, 0]]
+    # p_q_m_list = [[283, 7, 1981], [29, 11, 319], [263, 263, 69169], [263, 11, 2893], [241, 233, 56153], [557, 523, 291311]]
+    # grid_sizes = [6, 24, 36, 9, 12, 24]
+    # unknowns_list = [[2, 0], [6, 3], [8, 5], [3, 1], [4, 0], [6, 0]]
+    p_q_m_list = [[283, 7, 1981], [263, 11, 2893], [241, 233, 56153], [557, 523, 291311], [29, 11, 319], [263, 263, 69169]]
+    grid_sizes = [6, 9, 12, 24, 24, 36]
+    unknowns_list = [[2, 0], [3, 1], [4, 0], [6, 0], [6, 3], [8, 5]]
     for p_q_m, grid_size, unknowns in zip(p_q_m_list, grid_sizes, unknowns_list):
         true_p = p_q_m[0]
         true_q = p_q_m[1]
         m = p_q_m[2]
-
         apply_preprocessing = True
         preprocessing_verbose = False
         optimization_verbose = False
-
+        if m != 319 and m != 69169:
+            continue
         number_of_unknowns = 0
         carry_bits = 0
         counter = 0
@@ -128,9 +131,10 @@ def main():
         p_q_info = [true_p, true_q, p_dict, q_dict]
         step_by_step_results = None
         for steps in range(1, 9):
-            for i in range(3):
-                print(m, steps, i)                
-                optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, gate_noise=1e-3, verbose=optimization_verbose, visualize=False)
+            for i in range(1):
+                print(m, steps, i)  
+                # optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, gate_noise=1e-3, verbose=optimization_verbose, visualize=False)
+                optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, gate_noise=None, verbose=optimization_verbose, visualize=False)
                 optimization_engine.step_by_step_results = step_by_step_results
                 squared_overlap, bfgs_evaluations, step_by_step_results = run_single_case(p_q_info, optimization_engine)
                 
@@ -140,7 +144,7 @@ def main():
                 # optimization_history = optimization_engine.optimization_history
                 # history_file_name = "_".join([str(m), str(steps), str(i), "history"]) + ".csv"
                 # np.savetxt(history_file_name, optimization_history, delimiter=",")
-            np.savetxt("results.csv", results, delimiter=",", header="m,steps,squared_overlap,bfgs_evaluations", fmt='%.4f', comments='')
+                np.savetxt("results.csv", results, delimiter=",", header="m,steps,squared_overlap,bfgs_evaluations", fmt='%.4f', comments='')
 
 if __name__ == '__main__':
     main()
