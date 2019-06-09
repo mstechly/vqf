@@ -135,8 +135,11 @@ def main():
                 optimization_engine = OptimizationEngine(clauses, steps=steps, grid_size=grid_size, tol=1e-10, gate_noise=None, verbose=optimization_verbose, visualize=False)
                 optimization_engine.step_by_step_results = step_by_step_results
                 squared_overlap, bfgs_evaluations, step_by_step_results = run_single_case(p_q_info, optimization_engine)
-                
-                print(squared_overlap)
+                final_betas = optimization_engine.qaoa_inst.betas
+                final_gammas = optimization_engine.qaoa_inst.gammas
+                print("betas:", final_betas)
+                print("gammas:", final_gammas)
+                # print(squared_overlap)
                 results.append([m, steps, squared_overlap, bfgs_evaluations])
 
                 # optimization_history = optimization_engine.optimization_history
