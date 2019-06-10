@@ -69,8 +69,8 @@ class OptimizationEngine(object):
         driver_operators = self.create_driver_operators()
         # minimizer_kwargs = {'method': 'BFGS',
         #                         'options': {'gtol': tol, 'disp': False}}
-        # bound_eps = 1e-10
-        # bounds = [(bound_eps, np.pi-bound_eps)]*steps + [(bound_eps, 2*np.pi-bound_eps)]*steps
+
+        # bounds = [(0, np.pi)]*steps + [(0, 2*np.pi)]*steps
         # minimizer_kwargs = {'method': 'L-BFGS-B',
         #                         'options': {'gtol': tol, 'disp': False},
         #                         'bounds': bounds}
