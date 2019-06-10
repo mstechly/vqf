@@ -1,5 +1,5 @@
 import pytest
-from src import preprocessing
+from vqf import preprocessing
 from sympy import symbols
 import pdb
 
