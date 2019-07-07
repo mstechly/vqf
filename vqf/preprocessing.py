@@ -369,7 +369,7 @@ def apply_preprocessing_rules(clauses, verbose=True):
             continue
 
 
-        known_expressions = apply_z_rule_1(clause, known_expressions, verbose)
+        known_expressions = apply_z_rule(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
 
         known_expressions = apply_rule_1(clause, known_expressions, verbose)
@@ -387,7 +387,7 @@ def apply_preprocessing_rules(clauses, verbose=True):
         known_expressions = apply_rule_of_equality(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
 
-        known_expressions = apply_z_rule_2(clause, known_expressions, verbose)
+        known_expressions = apply_parity_rule(clause, known_expressions, verbose)
         clause = simplify_clause(clause, known_expressions)
 
 
@@ -444,9 +444,9 @@ def simplify_clause(clause, known_expressions, iterations=2):
     return simplified_clause
 
 
-def apply_z_rule_1(clause, known_expressions, verbose=False):
+def apply_z_rule(clause, known_expressions, verbose=False):
     """
-    Extends known_expressions by applying Z-rule 1 (see example below).
+    Extends known_expressions by applying "Z-rule" (see example below).
     
     This rule has been described in the section IIB of the article.
     Example: p_1 + q_1 - 1 - 2*z_1_2 = 0
@@ -481,9 +481,9 @@ def apply_z_rule_1(clause, known_expressions, verbose=False):
     return known_expressions
 
 
-def apply_z_rule_2(clause, known_expressions, verbose=False):
+def apply_parity_rule(clause, known_expressions, verbose=False):
     """
-    Extends known_expressions by applying Z-rule 2 (see example below).
+    Extends known_expressions by applying parity rule (see example below).
     
     Example: p_1 + q_1 - 2*z_1_2 = 0
     p1 and z_1_2 must be equal to q1, otherwise the equation can't be satisfied.
