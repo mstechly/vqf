@@ -33,7 +33,6 @@ Below you can find a list of points where I'm aware that my implementation diffe
 ### QAOA
 - The grid size used for the initialization of BFGS algorithm (Table I in the paper) has been chosen arbitrary. Therefore I have also used arbitrary grid size - it might be too low in some cases, depending on the number being factored. Make sure you choose the right parameter here.
 - Implementation of the BFGS algorithm is different from the one used in the original paper (see report in `research/2019_05_08_performance_checks`).
-- I'm not 100% sure if the "layer-by-layer iterative brute-force grid search" I've implemented is the same as the one used by the authors (Sec. III in the paper).
 
 
 ## Research
