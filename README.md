@@ -6,6 +6,10 @@ This repository contains implementation of the algorithm presented in the articl
 
 The notation in the code refers directly to the notation in the paper.
 
+I gave a talk about this project, which might be a good introduction to it.
+You can find it [on YouTube](https://www.youtube.com/watch?v=2tZrg4VQVpA) and the slides are in this repository in the `presentation.pdf` file.
+
+
 ### Requirements
 
 This project relies heavily on `pyquil` and `grove` libraries. Unfortunately, at the time I was developing this project, released versions had bugs that were critical for this project.
