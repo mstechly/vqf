@@ -9,7 +9,7 @@ The notation in the code refers directly to the notation in the paper.
 I gave a talk about this project, which might be a good introduction to it.
 You can find it [on YouTube](https://www.youtube.com/watch?v=2tZrg4VQVpA) and the slides are in this repository in the `presentation.pdf` file.
 
-Since QAOA is an important part of the algorithm, if you're unfamiliar with it you might find [my blogpost about QAOA](www.mustythoughts.com/Quantum-Approximate-Optimization-Algorithm-Explained.html) helpful.
+Since QAOA is an important part of the algorithm, if you're unfamiliar with it you might find [my blogpost about QAOA](https://www.mustythoughts.com/Quantum-Approximate-Optimization-Algorithm-Explained.html) helpful.
 
 ### Requirements
 
