@@ -109,7 +109,6 @@ def create_clauses(m_int, true_p_int=None, true_q_int=None, apply_preprocessing=
         for clause in final_clauses:
             print(clause)
 
-
     return p_dict, q_dict, z_dict, final_clauses
 
 
@@ -133,7 +132,6 @@ def simplify_clauses(clauses, verbose=True):
     while should_continue:
         if verbose:
             print("Preprocessing iteration:", counter)
-
         new_simplified_clauses, new_known_expressions = apply_preprocessing_rules(simplified_clauses, verbose)
         for new_clause, old_clause in zip(new_simplified_clauses, simplified_clauses):
             if new_clause != old_clause:
@@ -333,11 +331,11 @@ def simplify_symmetric_case(p_dict, q_dict):
     if len(p_dict) != len(q_dict):
         return p_dict, q_dict
 
-    for key in p_dict.keys():
-            if type(p_dict[key]) != int or type(q_dict[key]) != int:
-                if p_dict[key] + q_dict[key] == 1:
-                    p_dict[key] = 1
-                    q_dict[key] = 0
+    for key in sorted(p_dict.keys())[::-1]:
+        if type(p_dict[key]) != int or type(q_dict[key]) != int:
+            if p_dict[key] + q_dict[key] == 1:
+                known_expressions = {p_dict[key]: 1, q_dict[key]: 0}
+                p_dict, q_dict, _ = update_dictionaries(known_expressions, p_dict, q_dict, {})
     return p_dict, q_dict
 
 
