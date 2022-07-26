@@ -237,15 +237,20 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
         clauses (list): See module documentation at the top.
     """
     clauses = []
-    n_c = len(m_dict) + int(np.ceil(len(m_dict)/2)) - 1
+
+    n_p = len(m_dict)
+    n_q = int(np.ceil(len(m_dict)/2))
+    n_c = n_p + n_q - 1
+
     for i in range(n_c):
         clause = 0
         for j in range(i+1):
-            clause += q_dict.get(j, 0) * p_dict.get(i-j, 0)
-        clause += -m_dict.get(i, 0)
+            clause += q_dict.get(j, 0) * p_dict.get(i-j, 0) # term 1 in eq 2
+
+        clause += -m_dict.get(i, 0) # term 3 in eq 2
 
         for j in range(i+1):
-            clause += z_dict.get((j, i), 0)
+            clause += z_dict.get((j, i), 0) # term 2 in eq 2
         
         if type(clause) == int:
             clause = sympify(clause)
@@ -264,7 +269,7 @@ def create_basic_clauses(m_dict, p_dict, q_dict, z_dict, apply_preprocessing=Tru
                     z_dict[(i, j)] = 0
         
         for j in range(1, n_c):
-            clause += - 2**j * z_dict.get((i, i+j), 0)
+            clause += - 2**j * z_dict.get((i, i+j), 0) # term 4 in eq 2
         
         if clause == 0:
             clause = sympify(clause)
@@ -286,11 +291,15 @@ def get_max_sum_from_clause(clause):
     """
 
     max_sum = 0
+    
     if clause.func == Mul:
         if isinstance(clause.args[0], Number) and clause.args[0] > 0:
             max_sum += int(clause.args[0])
+        elif isinstance(term.args[0], Number) and term.args[0] < 0:
+            pass
         else:
             max_sum += 1
+    
     elif clause.func == Add:
         for term in clause.args:
             if isinstance(term, Number):

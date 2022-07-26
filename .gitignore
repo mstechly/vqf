@@ -1,2 +1,4 @@
 *.pyc
 /vqf-venv/*
+*.ipynb
+/venv/*
