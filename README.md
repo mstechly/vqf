@@ -1,4 +1,4 @@
-# Variation Quantum Factoring
+# Variational Quantum Factoring
 
 ## Introduction
 
