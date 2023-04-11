@@ -1,2 +1,6 @@
 *.pyc
 /vqf-venv/*
+.venv/
+build/
+dist/
+vqf.egg-info/
