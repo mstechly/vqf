@@ -8,9 +8,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     python_requires=">=3.10",
-    install_requires=[
-        # add any package dependencies here
-    ],
+    install_requires=open("requirements.txt").readlines(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
