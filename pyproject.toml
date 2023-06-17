@@ -3,7 +3,7 @@ name = "vqf"
 version = "0.1.0"
 description = "This repository contains implementation of the algorithm presented in the article \"Variational Quantum Factoring\", by Eric R. Anschuetz, Jonathan P. Olson, Alán Aspuru-Guzik, Yudong Cao."
 authors = ["Michal Stechly"]
-license = "MIT"
+license = "Apache"
 readme = "README.md"
 
 [tool.poetry.dependencies]
