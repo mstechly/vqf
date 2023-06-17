@@ -74,4 +74,3 @@ pip install git+https://github.com/mstechly/vqf.git
 
 Please note that the installation requires the correct versions of `pyquil` and `grove` as specified in the `setup.py` file.
 
-Please let me know if you have any further questions or need additional information!
