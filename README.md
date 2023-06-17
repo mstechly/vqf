@@ -63,3 +63,15 @@ I do not claim that the preprocessing part is perfect, though from manual inspec
 - Current version of code doesn't produce correct results for number 1465 (factors: 293 and 5). This doesn't happen always (see note about randomness above).
 - There are still some additional rules to add / cases to fix (see TODO in `preprocessing.py`).
 - In cases exhibiting some form of symmetry (as described [here](https://arxiv.org/pdf/1411.6758.pdf)), procedure of calculating squared overlap might give wrong results. The fix for numbers 56153 and 291311, has been hardcoded, but it's far from being elegant and general solution.
+
+## Installation
+
+To install this package, run the following command:
+
+```
+pip install git+https://github.com/mstechly/vqf.git
+```
+
+Please note that the installation requires the correct versions of `pyquil` and `grove` as specified in the `setup.py` file.
+
+Please let me know if you have any further questions or need additional information!
